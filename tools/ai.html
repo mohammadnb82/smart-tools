@@ -3,36 +3,61 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>تشخیص حرکت (نمایش پردازش)</title>
+<title>سیستم حفاظتی هوشمند</title>
 
 <style>
 body {
     margin: 0;
-    background: #000;
+    background: #111;
     color: #00ffcc;
     font-family: Tahoma, Arial, sans-serif;
     text-align: center;
+    padding-bottom: 50px;
 }
 
 header {
     padding: 15px;
-    border-bottom: 1px solid #00ffcc;
+    background: #000;
+    border-bottom: 2px solid #00ffcc;
+    margin-bottom: 20px;
 }
 
-.section {
-    border: 1px solid #00ffcc;
-    margin: 15px auto;
-    padding: 12px;
-    max-width: 420px;
-    position: relative; /* برای مدیریت لایه‌ها */
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 10px;
 }
 
-/* 
-   🔴 اصلاح مهم برای آیفون:
-   به جای display: none از روش زیر استفاده می‌کنیم.
-   ویدیو وجود دارد اما شفافیت آن صفر است و زیر لایه‌هاست.
-   این باعث می‌شود سافاری به پردازش فریم‌ها ادامه دهد.
-*/
+.panel {
+    border: 1px solid #333;
+    background: #1a1a1a;
+    padding: 15px;
+    border-radius: 10px;
+    position: relative;
+    transition: all 0.3s;
+}
+
+.panel.active {
+    border-color: #00ffcc;
+    box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+}
+
+.panel-title {
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 5px;
+    display: block;
+    color: #fff;
+}
+
+.panel-desc {
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 10px;
+}
+
+/* ویدیو مخفی برای پردازش iOS */
 video {
     position: absolute;
     top: 0;
@@ -44,95 +69,150 @@ video {
     pointer-events: none;
 }
 
-/* ✅ خروجی پردازش دیده می‌شود */
 canvas {
     width: 100%;
-    border: 1px solid #00ffcc;
-    margin-top: 10px;
+    max-width: 400px;
+    height: auto;
+    border: 1px solid #444;
     background: #000;
     border-radius: 8px;
+    margin-top: 5px;
+}
+
+.btn-row {
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
 }
 
 button {
-    background: #000;
-    color: #00ffcc;
-    border: 1px solid #00ffcc;
-    padding: 10px 18px;
-    margin: 6px;
-    font-size: 15px;
-    border-radius: 5px;
+    border: none;
+    padding: 12px 0;
+    font-size: 14px;
+    border-radius: 6px;
     cursor: pointer;
+    font-weight: bold;
+    flex: 1; 
+    max-width: 120px;
 }
 
-button:hover {
-    background: #00ffcc;
-    color: #000;
+.btn-start { background: #008866; color: #fff; }
+.btn-stop { background: #882222; color: #fff; }
+.btn-start:hover { background: #00aa88; }
+.btn-stop:hover { background: #aa3333; }
+
+.status {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #888;
+    min-height: 20px;
 }
 
 .alert {
     color: #ff3333;
     font-weight: bold;
-    animation: blink 0.5s infinite alternate;
+    animation: blink 0.2s infinite alternate;
 }
 
 @keyframes blink {
     from { opacity: 1; }
     to { opacity: 0.5; }
 }
+
 </style>
 </head>
 
 <body>
 
 <header>
-<h2>🎥 سیستم تشخیص حرکت</h2>
-<p style="color:#aaa;font-size:14px">
-نمایش تصویر پردازش‌شده • نسخه iOS Fix
-</p>
+    <h2>🛡️ سیستم حفاظتی هوشمند</h2>
+    <p style="color:#aaa;font-size:12px">بدون نیاز به اینترنت (نسخه iOS)</p>
 </header>
 
-<div class="section">
-<button id="startBtn">▶ شروع سیستم</button>
-<button id="stopBtn">⏹ توقف</button>
-
-<!-- ویدیو مخفی شده با CSS اما فعال است -->
+<!-- ویدیو سورس اصلی (مشترک و مخفی) -->
 <video id="video" autoplay playsinline muted></video>
-<canvas id="canvas"></canvas>
 
-<div id="status" style="margin-top:15px;">وضعیت: خاموش</div>
+<div class="container">
+
+    <!-- پنل ۱: حساس -->
+    <div class="panel" id="panel-sensitive">
+        <span class="panel-title">👁️ حساسیت بالا (همه چیز)</span>
+        <p class="panel-desc">حتی حرکت برگ درخت یا حشرات را می‌گیرد.</p>
+        
+        <canvas id="canvas1"></canvas>
+        <div class="status" id="status1">خاموش</div>
+        
+        <div class="btn-row">
+            <button class="btn-start" onclick="startSystem('sensitive')">شروع</button>
+            <button class="btn-stop" onclick="stopSystem()">توقف</button>
+        </div>
+    </div>
+
+    <!-- پنل ۲: فقط بزرگ -->
+    <div class="panel" id="panel-heavy">
+        <span class="panel-title">🐘 اشیاء بزرگ‌تر از گربه</span>
+        <p class="panel-desc">فقط حرکت انسان و ماشین را آژیر می‌کشد.</p>
+        
+        <canvas id="canvas2"></canvas>
+        <div class="status" id="status2">خاموش</div>
+        
+        <div class="btn-row">
+            <button class="btn-start" onclick="startSystem('heavy')">شروع</button>
+            <button class="btn-stop" onclick="stopSystem()">توقف</button>
+        </div>
+    </div>
+
 </div>
 
 <script>
+// تنظیمات سراسری
 const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-const statusText = document.getElementById("status");
-
-let stream = null;
-let lastFrame = null;
-let monitoring = false;
+let currentStream = null;
+let currentMode = null; 
 let audioCtx = null;
 let oscillator = null;
+let lastFrame = null;
+let analysisLoop = null;
 
-// تابع آژیر
-function startAlarm() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// تنظیمات حساسیت
+const CONFIG = {
+    sensitive: {
+        threshold: 3000,      // حساسیت زیاد
+        pixelSkip: 4,         
+        soundFreq: 1200,      // صدای زیر
+        soundType: 'sine',
+        canvasId: 'canvas1',
+        panelId: 'panel-sensitive',
+        statusId: 'status1'
+    },
+    heavy: {
+        threshold: 60000,     // حساسیت کم (فقط اجسام بزرگ)
+        pixelSkip: 8,         
+        soundFreq: 150,       // صدای بم (خطر)
+        soundType: 'sawtooth',
+        canvasId: 'canvas2',
+        panelId: 'panel-heavy',
+        statusId: 'status2'
     }
-    // اگر قبلاً روشن است، دوباره نسازیم
-    if (oscillator) return;
+};
+
+// --- توابع صدا ---
+function startAlarm(type) {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (oscillator) return; 
 
     oscillator = audioCtx.createOscillator();
-    oscillator.type = "sawtooth";
-    oscillator.frequency.value = 1000; // فرکانس صدا
-    
-    // ولوم برای کنترل بلندی صدا
     const gainNode = audioCtx.createGain();
-    gainNode.gain.value = 0.1; // صدای ملایم‌تر
+    
+    const settings = CONFIG[type];
+    oscillator.type = settings.soundType;
+    oscillator.frequency.value = settings.soundFreq;
+    
+    gainNode.gain.value = 0.2; 
     
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-    
     oscillator.start();
 }
 
@@ -146,115 +226,121 @@ function stopAlarm() {
     }
 }
 
-document.getElementById("startBtn").onclick = async () => {
-    if (monitoring) return;
+// --- مدیریت سیستم ---
+async function startSystem(mode) {
+    if (currentMode) stopSystem();
+
+    currentMode = mode;
+    const settings = CONFIG[mode];
+
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(settings.panelId).classList.add('active');
+    updateStatus("در حال آماده‌سازی...", false);
 
     try {
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { 
-                facingMode: "environment", // دوربین پشت
-                width: { ideal: 640 },
-                height: { ideal: 480 }
-            },
-            audio: false
-        });
-
-        video.srcObject = stream;
-        // صبر می‌کنیم تا متادیتای ویدیو لود شود
-        video.onloadedmetadata = () => {
+        if (!currentStream) {
+            currentStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment", width: 640, height: 480 },
+                audio: false
+            });
+            video.srcObject = currentStream;
+            
+            await new Promise(r => video.onloadedmetadata = r);
             video.play();
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-        };
+        }
 
-        monitoring = true;
         lastFrame = null;
-
-        statusText.textContent = "وضعیت: در حال پایش...";
-        statusText.className = "";
-
-        // شروع حلقه پردازش
+        updateStatus("🟢 فعال - در حال نگهبانی", false);
         detectMotion();
 
     } catch (err) {
         console.error(err);
-        statusText.textContent = "خطا در دسترسی به دوربین!";
-        statusText.style.color = "red";
+        updateStatus("❌ خطا در دوربین", false);
+        currentMode = null;
     }
-};
+}
 
-document.getElementById("stopBtn").onclick = () => {
-    monitoring = false;
-    stopAlarm();
-
-    if (stream) {
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-    }
-
-    statusText.textContent = "وضعیت: متوقف شد";
-    statusText.className = "";
+function stopSystem() {
+    if (!currentMode) return;
     
-    // پاک کردن تصویر کانواس
+    stopAlarm();
+    
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    updateStatus("خاموش", false);
+    
+    const canvas = document.getElementById(CONFIG[currentMode].canvasId);
+    const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-};
 
+    currentMode = null;
+    cancelAnimationFrame(analysisLoop);
+}
+
+function updateStatus(text, isAlert) {
+    if (!currentMode) return;
+    const el = document.getElementById(CONFIG[currentMode].statusId);
+    el.textContent = text;
+    el.className = isAlert ? "status alert" : "status";
+}
+
+// --- هسته پردازش تصویر ---
 function detectMotion() {
-    // اگر مانیتورینگ خاموش شد، از تابع خارج شو
-    if (!monitoring) return;
+    if (!currentMode) return;
 
-    // درخواست فریم بعدی همین اول کار ارسال می‌شود تا حلقه قطع نشود
-    requestAnimationFrame(detectMotion);
+    analysisLoop = requestAnimationFrame(detectMotion);
 
-    // اگر ویدیو هنوز آماده نیست، کاری نکن ولی حلقه ادامه دارد
-    if (video.readyState !== video.HAVE_ENOUGH_DATA || video.videoWidth === 0) return;
+    if (video.readyState !== 4 || video.videoWidth === 0) return;
 
-    // اطمینان از سایز درست کانواس
+    const settings = CONFIG[currentMode];
+    const canvas = document.getElementById(settings.canvasId);
+    const ctx = canvas.getContext("2d");
+
     if (canvas.width !== video.videoWidth) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
     }
 
-    // 1. رسم فریم فعلی روی کانواس اصلی
+    // رسم تصویر زنده
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // 2. ساخت نسخه کوچک برای پردازش (جهت سرعت بالا)
-    const W = 64, H = 48;
-    const tempCanvas = document.createElement("canvas");
-    tempCanvas.width = W;
-    tempCanvas.height = H;
-    const tctx = tempCanvas.getContext("2d");
-    tctx.drawImage(video, 0, 0, W, H);
+    // پردازش روی نسخه بسیار کوچک
+    const w = currentMode === 'heavy' ? 32 : 64;
+    const h = currentMode === 'heavy' ? 24 : 48;
     
-    const frame = tctx.getImageData(0, 0, W, H);
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = w;
+    tempCanvas.height = h;
+    const tctx = tempCanvas.getContext('2d');
+    tctx.drawImage(video, 0, 0, w, h);
+    
+    const frame = tctx.getImageData(0, 0, w, h);
 
-    // 3. مقایسه با فریم قبلی
     if (lastFrame) {
         let diff = 0;
-        // بررسی پیکسل به پیکسل (گام 4 تایی برای سرعت)
-        for (let i = 0; i < frame.data.length; i += 4) {
-            // مقایسه کانال سبز (معمولاً نویز کمتری دارد)
-            diff += Math.abs(frame.data[i+1] - lastFrame.data[i+1]);
+        const data = frame.data;
+        const lastData = lastFrame.data;
+        const skip = settings.pixelSkip;
+
+        for (let i = 0; i < data.length; i += 4 * skip) {
+            const d = Math.abs(data[i+1] - lastData[i+1]);
+            if (d > 20) { 
+                diff += d;
+            }
         }
 
-        // آستانه حساسیت
-        if (diff > 3000) { 
-            statusText.textContent = "🚨 حرکت تشخیص داده شد!";
-            statusText.className = "alert";
-            startAlarm();
+        if (diff > settings.threshold) {
+            updateStatus("🚨 ورود غیرمجاز!", true);
+            startAlarm(currentMode);
 
-            // رسم یک کادر قرمز روی تصویر
             ctx.strokeStyle = "red";
             ctx.lineWidth = 5;
             ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
             
-            // یا یک لایه قرمز شفاف
-            ctx.fillStyle = "rgba(255, 0, 0, 0.2)";
+            // فلش قرمز روی تصویر برای جلب توجه
+            ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
         } else {
-            statusText.textContent = "وضعیت: ایمن (بدون حرکت)";
-            statusText.className = "";
+            updateStatus("🟢 امن", false);
             stopAlarm();
         }
     }
@@ -265,3 +351,4 @@ function detectMotion() {
 
 </body>
 </html>
+
