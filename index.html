@@ -1,44 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Smart Tools Platform</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پلتفرم ابزارهای هوشمند</title>
 
 <style>
 body {
-  margin:0;
-  background:#000;
-  color:#00ff99;
-  font-family:system-ui;
+    margin: 0;
+    background: #000;
+    color: #00ffcc;
+    font-family: Tahoma, Arial, sans-serif;
+    text-align: center;
 }
+
 header {
-  padding:16px;
-  text-align:center;
-  border-bottom:1px solid #003322;
+    padding: 25px 10px;
+    border-bottom: 1px solid #00ffcc;
 }
+
+h1 {
+    margin: 0;
+    font-size: 26px;
+}
+
+p {
+    margin-top: 10px;
+    color: #aaa;
+}
+
 section {
-  padding:16px;
+    padding: 30px 10px;
 }
-.tool {
-  border:1px solid #003322;
-  border-radius:10px;
-  padding:16px;
-  margin-bottom:12px;
+
+.tool-box {
+    border: 1px solid #00ffcc;
+    margin: 15px auto;
+    padding: 20px;
+    max-width: 420px;
 }
-a {
-  color:#00ff99;
-  text-decoration:none;
-  border:1px solid #00ff99;
-  padding:8px 12px;
-  display:inline-block;
-  margin-top:8px;
+
+.tool-box h2 {
+    margin-top: 0;
 }
-footer {
-  text-align:center;
-  padding:12px;
-  font-size:12px;
-  opacity:0.6;
+
+.tool-box p {
+    font-size: 14px;
+}
+
+a.button {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 25px;
+    border: 1px solid #00ffcc;
+    color: #00ffcc;
+    text-decoration: none;
+}
+
+a.button:hover {
+    background: #00ffcc;
+    color: #000;
 }
 </style>
 </head>
@@ -46,32 +67,43 @@ footer {
 <body>
 
 <header>
-  <h1>🌐 Smart Tools Platform</h1>
-  <p>Free • Global • Client‑Side Tools</p>
+    <h1>پلتفرم ابزارهای هوشمند</h1>
+    <p>ابزارهای رایگان • اجرا مستقیم در مرورگر • بدون سرور</p>
 </header>
 
 <section>
-  <div class="tool">
-    <h3>🎬 Media Tools</h3>
-    <p>Video, Audio & Media Processing in your browser</p>
-    <a href="tools/media.html">Open</a>
-  </div>
 
-  <div class="tool">
-    <h3>🧠 Smart / AI Tools</h3>
-    <p>Intelligent tools running directly on your device</p>
-    <a href="tools/ai.html">Open</a>
-  </div>
+    <div class="tool-box">
+        <h2>ابزارهای هوشمند</h2>
+        <p>
+            ابزارهایی که با استفاده از دوربین، تصویر و منطق هوشمند،
+            مستقیماً در مرورگر اجرا می‌شوند.
+        </p>
+        <a class="button" href="tools/ai.html">
+            ورود به ابزار تشخیص حرکت
+        </a>
+    </div>
 
-  <div class="tool">
-    <h3>🛠 Utility Tools</h3>
-    <p>Practical tools for everyday tasks</p>
-    <a href="tools/utils.html">Open</a>
-  </div>
+    <div class="tool-box">
+        <h2>ابزارهای مدیا</h2>
+        <p>
+            ابزارهای پردازش ویدیو، صدا و تصویر بدون نیاز به نصب برنامه.
+        </p>
+        <span style="color:#555;">(به‌زودی)</span>
+    </div>
+
+    <div class="tool-box">
+        <h2>ابزارهای کاربردی</h2>
+        <p>
+            ابزارهای ساده و مفید برای استفاده روزمره.
+        </p>
+        <span style="color:#555;">(به‌زودی)</span>
+    </div>
+
 </section>
 
-<footer>
-  Built with ❤️ | No server | No tracking
+<footer style="padding:20px; color:#555; font-size:13px;">
+    ساخته شده برای استفاده جهانی — اجرا در هر دستگاه
 </footer>
 
 </body>
