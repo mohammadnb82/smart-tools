@@ -24,11 +24,24 @@ header {
     margin: 15px auto;
     padding: 12px;
     max-width: 420px;
+    position: relative; /* برای مدیریت لایه‌ها */
 }
 
-/* 🚫 ویدئوی خام مخفی */
+/* 
+   🔴 اصلاح مهم برای آیفون:
+   به جای display: none از روش زیر استفاده می‌کنیم.
+   ویدیو وجود دارد اما شفافیت آن صفر است و زیر لایه‌هاست.
+   این باعث می‌شود سافاری به پردازش فریم‌ها ادامه دهد.
+*/
 video {
-    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    z-index: -1;
+    pointer-events: none;
 }
 
 /* ✅ خروجی پردازش دیده می‌شود */
@@ -37,6 +50,7 @@ canvas {
     border: 1px solid #00ffcc;
     margin-top: 10px;
     background: #000;
+    border-radius: 8px;
 }
 
 button {
@@ -46,6 +60,8 @@ button {
     padding: 10px 18px;
     margin: 6px;
     font-size: 15px;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
 button:hover {
@@ -54,8 +70,14 @@ button:hover {
 }
 
 .alert {
-    color: red;
+    color: #ff3333;
     font-weight: bold;
+    animation: blink 0.5s infinite alternate;
+}
+
+@keyframes blink {
+    from { opacity: 1; }
+    to { opacity: 0.5; }
 }
 </style>
 </head>
@@ -65,7 +87,7 @@ button:hover {
 <header>
 <h2>🎥 سیستم تشخیص حرکت</h2>
 <p style="color:#aaa;font-size:14px">
-نمایش تصویر پردازش‌شده • بدون نمایش ویدئوی خام
+نمایش تصویر پردازش‌شده • نسخه iOS Fix
 </p>
 </header>
 
@@ -73,10 +95,11 @@ button:hover {
 <button id="startBtn">▶ شروع سیستم</button>
 <button id="stopBtn">⏹ توقف</button>
 
-<video id="video" autoplay playsinline></video>
+<!-- ویدیو مخفی شده با CSS اما فعال است -->
+<video id="video" autoplay playsinline muted></video>
 <canvas id="canvas"></canvas>
 
-<div id="status">وضعیت: خاموش</div>
+<div id="status" style="margin-top:15px;">وضعیت: خاموش</div>
 </div>
 
 <script>
@@ -88,28 +111,37 @@ const statusText = document.getElementById("status");
 let stream = null;
 let lastFrame = null;
 let monitoring = false;
-
-// 🔊 آژیر (iOS-safe)
 let audioCtx = null;
 let oscillator = null;
 
+// تابع آژیر
 function startAlarm() {
     if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
+    // اگر قبلاً روشن است، دوباره نسازیم
     if (oscillator) return;
 
     oscillator = audioCtx.createOscillator();
     oscillator.type = "sawtooth";
-    oscillator.frequency.value = 1000;
-    oscillator.connect(audioCtx.destination);
+    oscillator.frequency.value = 1000; // فرکانس صدا
+    
+    // ولوم برای کنترل بلندی صدا
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0.1; // صدای ملایم‌تر
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
     oscillator.start();
 }
 
 function stopAlarm() {
     if (oscillator) {
-        oscillator.stop();
-        oscillator.disconnect();
+        try {
+            oscillator.stop();
+            oscillator.disconnect();
+        } catch(e) {}
         oscillator = null;
     }
 }
@@ -117,19 +149,38 @@ function stopAlarm() {
 document.getElementById("startBtn").onclick = async () => {
     if (monitoring) return;
 
-    stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false
-    });
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+                facingMode: "environment", // دوربین پشت
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            },
+            audio: false
+        });
 
-    video.srcObject = stream;
-    monitoring = true;
-    lastFrame = null;
+        video.srcObject = stream;
+        // صبر می‌کنیم تا متادیتای ویدیو لود شود
+        video.onloadedmetadata = () => {
+            video.play();
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+        };
 
-    statusText.textContent = "وضعیت: در حال پایش...";
-    statusText.className = "";
+        monitoring = true;
+        lastFrame = null;
 
-    requestAnimationFrame(detectMotion);
+        statusText.textContent = "وضعیت: در حال پایش...";
+        statusText.className = "";
+
+        // شروع حلقه پردازش
+        detectMotion();
+
+    } catch (err) {
+        console.error(err);
+        statusText.textContent = "خطا در دسترسی به دوربین!";
+        statusText.style.color = "red";
+    }
 };
 
 document.getElementById("stopBtn").onclick = () => {
@@ -143,53 +194,74 @@ document.getElementById("stopBtn").onclick = () => {
 
     statusText.textContent = "وضعیت: متوقف شد";
     statusText.className = "";
+    
+    // پاک کردن تصویر کانواس
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 };
 
 function detectMotion() {
-    if (!monitoring || video.videoWidth === 0) return;
+    // اگر مانیتورینگ خاموش شد، از تابع خارج شو
+    if (!monitoring) return;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // درخواست فریم بعدی همین اول کار ارسال می‌شود تا حلقه قطع نشود
+    requestAnimationFrame(detectMotion);
 
-    // ✅ نمایش تصویر پردازش‌شده روی Canvas
+    // اگر ویدیو هنوز آماده نیست، کاری نکن ولی حلقه ادامه دارد
+    if (video.readyState !== video.HAVE_ENOUGH_DATA || video.videoWidth === 0) return;
+
+    // اطمینان از سایز درست کانواس
+    if (canvas.width !== video.videoWidth) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+    }
+
+    // 1. رسم فریم فعلی روی کانواس اصلی
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // تشخیص حرکت با نسخه‌ی کوچک‌شده
+    // 2. ساخت نسخه کوچک برای پردازش (جهت سرعت بالا)
     const W = 64, H = 48;
-    const temp = document.createElement("canvas");
-    temp.width = W;
-    temp.height = H;
-    const tctx = temp.getContext("2d");
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = W;
+    tempCanvas.height = H;
+    const tctx = tempCanvas.getContext("2d");
     tctx.drawImage(video, 0, 0, W, H);
+    
     const frame = tctx.getImageData(0, 0, W, H);
 
+    // 3. مقایسه با فریم قبلی
     if (lastFrame) {
         let diff = 0;
+        // بررسی پیکسل به پیکسل (گام 4 تایی برای سرعت)
         for (let i = 0; i < frame.data.length; i += 4) {
-            diff += Math.abs(frame.data[i] - lastFrame.data[i]);
+            // مقایسه کانال سبز (معمولاً نویز کمتری دارد)
+            diff += Math.abs(frame.data[i+1] - lastFrame.data[i+1]);
         }
 
-        if (diff > 2000) {
+        // آستانه حساسیت
+        if (diff > 3000) { 
             statusText.textContent = "🚨 حرکت تشخیص داده شد!";
             statusText.className = "alert";
             startAlarm();
 
-            // نشان دادن هشدار روی تصویر
-            ctx.fillStyle = "rgba(255,0,0,0.25)";
+            // رسم یک کادر قرمز روی تصویر
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 5;
+            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+            
+            // یا یک لایه قرمز شفاف
+            ctx.fillStyle = "rgba(255, 0, 0, 0.2)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
         } else {
-            statusText.textContent = "وضعیت: بدون حرکت";
+            statusText.textContent = "وضعیت: ایمن (بدون حرکت)";
             statusText.className = "";
             stopAlarm();
         }
     }
 
     lastFrame = frame;
-    requestAnimationFrame(detectMotion);
 }
 </script>
 
 </body>
 </html>
-
-
