@@ -3,61 +3,86 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>سیستم حفاظتی هوشمند</title>
+<title>سیستم حفاظتی حرفه‌ای</title>
 
 <style>
 body {
     margin: 0;
-    background: #111;
+    background: #0f0f12;
     color: #00ffcc;
-    font-family: Tahoma, Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     text-align: center;
-    padding-bottom: 50px;
+    padding-bottom: 80px;
 }
 
 header {
-    padding: 15px;
-    background: #000;
-    border-bottom: 2px solid #00ffcc;
+    padding: 20px;
+    background: linear-gradient(180deg, #000 0%, #1a1a1a 100%);
+    border-bottom: 1px solid #00ffcc;
     margin-bottom: 20px;
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
 }
+
+h2 { margin: 0; font-size: 22px; }
 
 .container {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 10px;
+    gap: 25px;
+    padding: 15px;
+    max-width: 600px;
+    margin: 0 auto;
 }
 
 .panel {
     border: 1px solid #333;
-    background: #1a1a1a;
-    padding: 15px;
-    border-radius: 10px;
+    background: #18181b;
+    padding: 20px;
+    border-radius: 12px;
     position: relative;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 
 .panel.active {
     border-color: #00ffcc;
-    box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.15);
+    background: #1e1e24;
 }
 
 .panel-title {
     font-weight: bold;
     font-size: 18px;
-    margin-bottom: 5px;
     display: block;
     color: #fff;
+    margin-bottom: 5px;
 }
 
 .panel-desc {
     font-size: 13px;
-    color: #aaa;
-    margin-bottom: 10px;
+    color: #888;
+    margin-bottom: 15px;
 }
 
-/* ویدیو مخفی برای پردازش iOS */
+/* اسلایدر تنظیم حساسیت */
+.slider-container {
+    margin: 15px 0;
+    text-align: center;
+}
+input[type=range] {
+    width: 100%;
+    accent-color: #00ffcc;
+    cursor: pointer;
+}
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* ویدیو مخفی */
 video {
     position: absolute;
     top: 0;
@@ -71,53 +96,65 @@ video {
 
 canvas {
     width: 100%;
-    max-width: 400px;
     height: auto;
-    border: 1px solid #444;
+    border: 2px solid #333;
     background: #000;
     border-radius: 8px;
-    margin-top: 5px;
+    display: block;
 }
 
 .btn-row {
-    margin-top: 15px;
+    margin-top: 20px;
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
 }
 
 button {
     border: none;
-    padding: 12px 0;
-    font-size: 14px;
-    border-radius: 6px;
+    padding: 14px 0;
+    font-size: 15px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
     flex: 1; 
-    max-width: 120px;
+    transition: transform 0.1s;
 }
 
-.btn-start { background: #008866; color: #fff; }
-.btn-stop { background: #882222; color: #fff; }
-.btn-start:hover { background: #00aa88; }
-.btn-stop:hover { background: #aa3333; }
+button:active { transform: scale(0.98); }
+
+.btn-start { background: linear-gradient(45deg, #008866, #00cc99); color: #fff; box-shadow: 0 4px 10px rgba(0, 204, 153, 0.3); }
+.btn-stop { background: linear-gradient(45deg, #882222, #cc3333); color: #fff; box-shadow: 0 4px 10px rgba(204, 51, 51, 0.3); }
 
 .status {
-    margin-top: 10px;
+    margin-top: 15px;
     font-size: 14px;
-    color: #888;
-    min-height: 20px;
+    color: #666;
+    font-weight: bold;
+}
+
+.debug-info {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #ffcc00;
+    background: rgba(0,0,0,0.5);
+    padding: 4px 8px;
+    border-radius: 4px;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    direction: ltr;
 }
 
 .alert {
     color: #ff3333;
-    font-weight: bold;
-    animation: blink 0.2s infinite alternate;
+    animation: pulse 0.5s infinite;
 }
 
-@keyframes blink {
-    from { opacity: 1; }
-    to { opacity: 0.5; }
+@keyframes pulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.02); }
+    100% { opacity: 1; transform: scale(1); }
 }
 
 </style>
@@ -126,39 +163,71 @@ button {
 <body>
 
 <header>
-    <h2>🛡️ سیستم حفاظتی هوشمند</h2>
-    <p style="color:#aaa;font-size:12px">بدون نیاز به اینترنت (نسخه iOS)</p>
+    <h2>🛡️ سیستم حفاظتی (نسخه ۳)</h2>
+    <div style="font-size:11px; color:#aaa; margin-top:5px;">با قابلیت تنظیم دستی</div>
 </header>
 
-<!-- ویدیو سورس اصلی (مشترک و مخفی) -->
 <video id="video" autoplay playsinline muted></video>
 
 <div class="container">
 
     <!-- پنل ۱: حساس -->
     <div class="panel" id="panel-sensitive">
-        <span class="panel-title">👁️ حساسیت بالا (همه چیز)</span>
-        <p class="panel-desc">حتی حرکت برگ درخت یا حشرات را می‌گیرد.</p>
+        <span class="panel-title">👁️ حساسیت حداکثری</span>
+        <p class="panel-desc">واکنش به کوچکترین حرکات (حشرات، برگ درخت).</p>
         
-        <canvas id="canvas1"></canvas>
-        <div class="status" id="status1">خاموش</div>
+        <div style="position:relative;">
+            <canvas id="canvas1"></canvas>
+            <div class="debug-info" id="debug1">Score: 0</div>
+        </div>
+        <div class="status" id="status1">غیرفعال</div>
         
         <div class="btn-row">
-            <button class="btn-start" onclick="startSystem('sensitive')">شروع</button>
+            <button class="btn-start" onclick="startSystem('sensitive')">فعال‌سازی</button>
             <button class="btn-stop" onclick="stopSystem()">توقف</button>
         </div>
     </div>
 
-    <!-- پنل ۲: فقط بزرگ -->
-    <div class="panel" id="panel-heavy">
-        <span class="panel-title">🐘 اشیاء بزرگ‌تر از گربه</span>
-        <p class="panel-desc">فقط حرکت انسان و ماشین را آژیر می‌کشد.</p>
+    <!-- پنل ۲: گربه -->
+    <div class="panel" id="panel-cat">
+        <span class="panel-title">🐱 حالت حیوانات خانگی (گربه)</span>
+        <p class="panel-desc">اشیاء کوچکتر از گربه (در فاصله دور) را نادیده می‌گیرد.</p>
         
-        <canvas id="canvas2"></canvas>
-        <div class="status" id="status2">خاموش</div>
+        <div style="position:relative;">
+            <canvas id="canvas2"></canvas>
+            <div class="debug-info" id="debug2">Score: 0</div>
+        </div>
+        <div class="status" id="status2">غیرفعال</div>
         
         <div class="btn-row">
-            <button class="btn-start" onclick="startSystem('heavy')">شروع</button>
+            <button class="btn-start" onclick="startSystem('cat')">فعال‌سازی</button>
+            <button class="btn-stop" onclick="stopSystem()">توقف</button>
+        </div>
+    </div>
+
+    <!-- پنل ۳: دستی -->
+    <div class="panel" id="panel-custom">
+        <span class="panel-title">🎛️ تنظیم دستی (پیشرفته)</span>
+        <p class="panel-desc">میزان حساسیت را خودتان با اسلایدر زیر تنظیم کنید.</p>
+        
+        <!-- اسلایدر تنظیم -->
+        <div class="slider-container">
+            <input type="range" id="sensitivitySlider" min="100" max="15000" step="100" value="3000" oninput="updateSliderDisplay(this.value)">
+            <div class="range-labels">
+                <span>خیلی حساس (حرکت ریز)</span>
+                <span>سنگین (انسان/ماشین)</span>
+            </div>
+            <div style="margin-top:5px; color:#00ffcc;">حد آستانه فعلی: <span id="sliderValueDisplay">3000</span></div>
+        </div>
+
+        <div style="position:relative;">
+            <canvas id="canvas3"></canvas>
+            <div class="debug-info" id="debug3">Score: 0</div>
+        </div>
+        <div class="status" id="status3">غیرفعال</div>
+        
+        <div class="btn-row">
+            <button class="btn-start" onclick="startSystem('custom')">شروع تست</button>
             <button class="btn-stop" onclick="stopSystem()">توقف</button>
         </div>
     </div>
@@ -166,7 +235,6 @@ button {
 </div>
 
 <script>
-// تنظیمات سراسری
 const video = document.getElementById("video");
 let currentStream = null;
 let currentMode = null; 
@@ -175,27 +243,50 @@ let oscillator = null;
 let lastFrame = null;
 let analysisLoop = null;
 
-// تنظیمات حساسیت
+// تنظیمات
 const CONFIG = {
     sensitive: {
-        threshold: 3000,      // حساسیت زیاد
+        threshold: 600,       // عدد کم = حساسیت بالا (برای حشرات/برگ)
         pixelSkip: 4,         
-        soundFreq: 1200,      // صدای زیر
+        soundFreq: 1200,     // صدای زیر (بیپ بیپ سریع)
         soundType: 'sine',
         canvasId: 'canvas1',
         panelId: 'panel-sensitive',
-        statusId: 'status1'
+        statusId: 'status1',
+        debugId: 'debug1',
+        resW: 64, resH: 48
     },
-    heavy: {
-        threshold: 60000,     // حساسیت کم (فقط اجسام بزرگ)
-        pixelSkip: 8,         
-        soundFreq: 150,       // صدای بم (خطر)
-        soundType: 'sawtooth',
+    cat: {
+        threshold: 2200,      // تنظیم شده برای گربه (نه خیلی حساس، نه خیلی سنگین)
+        pixelSkip: 4,         
+        soundFreq: 600,       // صدای متوسط
+        soundType: 'square',
         canvasId: 'canvas2',
-        panelId: 'panel-heavy',
-        statusId: 'status2'
+        panelId: 'panel-cat',
+        statusId: 'status2',
+        debugId: 'debug2',
+        resW: 64, resH: 48
+    },
+    custom: {
+        threshold: 3000,      // مقدار اولیه (از اسلایدر خوانده می‌شود)
+        pixelSkip: 4,
+        soundFreq: 300,       // صدای بم هشدار
+        soundType: 'sawtooth',
+        canvasId: 'canvas3',
+        panelId: 'panel-custom',
+        statusId: 'status3',
+        debugId: 'debug3',
+        resW: 64, resH: 48
     }
 };
+
+function updateSliderDisplay(val) {
+    document.getElementById('sliderValueDisplay').innerText = val;
+    // اگر در حال اجرای حالت کاستوم هستیم، مقدار را ریل‌تایم آپدیت کن
+    if(currentMode === 'custom') {
+        CONFIG.custom.threshold = parseInt(val);
+    }
+}
 
 // --- توابع صدا ---
 function startAlarm(type) {
@@ -209,6 +300,12 @@ function startAlarm(type) {
     oscillator.type = settings.soundType;
     oscillator.frequency.value = settings.soundFreq;
     
+    // مدولاسیون صدا برای ترسناک‌تر شدن آلارم
+    if (type === 'cat' || type === 'custom') {
+        oscillator.frequency.setValueAtTime(settings.soundFreq, audioCtx.currentTime);
+        oscillator.frequency.linearRampToValueAtTime(settings.soundFreq - 100, audioCtx.currentTime + 0.1);
+    }
+
     gainNode.gain.value = 0.2; 
     
     oscillator.connect(gainNode);
@@ -232,10 +329,16 @@ async function startSystem(mode) {
 
     currentMode = mode;
     const settings = CONFIG[mode];
+    
+    // خواندن مقدار اسلایدر اگر حالت دستی باشد
+    if (mode === 'custom') {
+        const sliderVal = document.getElementById('sensitivitySlider').value;
+        settings.threshold = parseInt(sliderVal);
+    }
 
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById(settings.panelId).classList.add('active');
-    updateStatus("در حال آماده‌سازی...", false);
+    updateStatus("...در حال کالیبراسیون دوربین...", false);
 
     try {
         if (!currentStream) {
@@ -244,7 +347,6 @@ async function startSystem(mode) {
                 audio: false
             });
             video.srcObject = currentStream;
-            
             await new Promise(r => video.onloadedmetadata = r);
             video.play();
         }
@@ -255,7 +357,7 @@ async function startSystem(mode) {
 
     } catch (err) {
         console.error(err);
-        updateStatus("❌ خطا در دوربین", false);
+        updateStatus("❌ خطا: دسترسی به دوربین ممکن نیست", false);
         currentMode = null;
     }
 }
@@ -266,11 +368,15 @@ function stopSystem() {
     stopAlarm();
     
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    updateStatus("خاموش", false);
+    updateStatus("غیرفعال", false);
     
-    const canvas = document.getElementById(CONFIG[currentMode].canvasId);
+    const settings = CONFIG[currentMode];
+    const canvas = document.getElementById(settings.canvasId);
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // ریست متن
+    document.getElementById(settings.debugId).innerText = "Score: 0";
 
     currentMode = null;
     cancelAnimationFrame(analysisLoop);
@@ -295,17 +401,18 @@ function detectMotion() {
     const canvas = document.getElementById(settings.canvasId);
     const ctx = canvas.getContext("2d");
 
+    // تنظیم سایز کانواس نمایشی
     if (canvas.width !== video.videoWidth) {
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
     }
 
-    // رسم تصویر زنده
+    // 1. رسم تصویر زنده
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // پردازش روی نسخه بسیار کوچک
-    const w = currentMode === 'heavy' ? 32 : 64;
-    const h = currentMode === 'heavy' ? 24 : 48;
+    // 2. ساخت تصویر کوچک برای آنالیز
+    const w = settings.resW;
+    const h = settings.resH;
     
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = w;
@@ -315,32 +422,44 @@ function detectMotion() {
     
     const frame = tctx.getImageData(0, 0, w, h);
 
+    // 3. مقایسه با فریم قبلی
     if (lastFrame) {
-        let diff = 0;
+        let score = 0;
         const data = frame.data;
         const lastData = lastFrame.data;
         const skip = settings.pixelSkip;
 
         for (let i = 0; i < data.length; i += 4 * skip) {
-            const d = Math.abs(data[i+1] - lastData[i+1]);
-            if (d > 20) { 
-                diff += d;
+            // فقط کانال سبز را مقایسه میکنیم (بهینه)
+            const diff = Math.abs(data[i+1] - lastData[i+1]); 
+            
+            // فیلتر نویز: تغییرات پیکسل زیر 20 را نادیده بگیر
+            if (diff > 20) { 
+                score += diff;
             }
         }
 
-        if (diff > settings.threshold) {
+        // نمایش امتیاز زنده
+        const debugEl = document.getElementById(settings.debugId);
+        if (debugEl) {
+            debugEl.innerText = `Score: ${score} / Limit: ${settings.threshold}`;
+            debugEl.style.color = score > settings.threshold ? "#ff3333" : "#ffcc00";
+        }
+
+        // تصمیم‌گیری آژیر
+        if (score > settings.threshold) {
             updateStatus("🚨 ورود غیرمجاز!", true);
             startAlarm(currentMode);
 
+            // افکت بصری قرمز
             ctx.strokeStyle = "red";
             ctx.lineWidth = 5;
             ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
             
-            // فلش قرمز روی تصویر برای جلب توجه
-            ctx.fillStyle = "rgba(255, 0, 0, 0.3)";
+            ctx.fillStyle = "rgba(255, 0, 0, 0.4)";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         } else {
-            updateStatus("🟢 امن", false);
+            updateStatus("🟢 وضعیت سفید", false);
             stopAlarm();
         }
     }
@@ -351,4 +470,3 @@ function detectMotion() {
 
 </body>
 </html>
-
