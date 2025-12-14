@@ -1,92 +1,45 @@
 import os
-import requests
-import json
-import subprocess
 import shutil
+import subprocess
 
-# --- تنظیمات و آدرس‌ها ---
-ASSETS_DIR = "smart-tools/assets"  # مسیر اصلاح شده برای ساختار فولدر شما
-MOVENET_DIR = os.path.join(ASSETS_DIR, "movenet")
+# --- تنظیمات ---
+ASSETS_DIR = "smart-tools/assets"
 ROOT_DIR = "smart-tools"
 
-# لینک‌های اصلی کتابخانه‌های مورد نیاز (نسخه‌های هماهنگ)
-TF_JS_URL = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"
-TF_BACKEND_URL = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.18.0/dist/tf-backend-webgl.js"
-TF_CONVERTER_URL = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@3.18.0/dist/tf-converter.js"
-POSE_DETECTION_URL = "https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0/dist/pose-detection.js"
-
-# لینک مدل MoveNet Lightning
-MODEL_BASE_URL = "https://storage.googleapis.com/tfjs-models/savedmodel/movenet/singlepose/lightning/"
-MODEL_JSON_URL = MODEL_BASE_URL + "model.json"
-
-def download_file(url, dest_path):
-    print(f"Downloading {url} -> {dest_path} ...")
-    try:
-        response = requests.get(url, stream=True)
-        response.raise_for_status()
-        with open(dest_path, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-        print("✅ Downloaded.")
-    except Exception as e:
-        print(f"❌ Error downloading {url}: {e}")
-
-def setup_directories():
-    if not os.path.exists(ASSETS_DIR):
-        os.makedirs(ASSETS_DIR)
-    if not os.path.exists(MOVENET_DIR):
-        os.makedirs(MOVENET_DIR)
-
-def download_assets():
-    # 1. دانلود کتابخانه‌های JS
-    download_file(TF_JS_URL, os.path.join(ASSETS_DIR, "tf.min.js"))
-    download_file(TF_BACKEND_URL, os.path.join(ASSETS_DIR, "tf-backend-webgl.js"))
-    download_file(TF_CONVERTER_URL, os.path.join(ASSETS_DIR, "tf-converter.js"))
-    download_file(POSE_DETECTION_URL, os.path.join(ASSETS_DIR, "pose-detection.js"))
-
-    # 2. دانلود مدل MoveNet (JSON + Binary shards)
-    json_path = os.path.join(MOVENET_DIR, "model.json")
-    download_file(MODEL_JSON_URL, json_path)
-    
-    try:
-        with open(json_path, 'r') as f:
-            model_data = json.load(f)
-            weights_manifest = model_data.get('weightsManifest', [])
-            for manifest in weights_manifest:
-                paths = manifest.get('paths', [])
-                for filename in paths:
-                    bin_url = MODEL_BASE_URL + filename
-                    bin_path = os.path.join(MOVENET_DIR, filename)
-                    download_file(bin_url, bin_path)
-    except Exception as e:
-        print(f"❌ Error parsing model.json: {e}")
+def clean_assets():
+    """پوشه assets را کامل حذف می‌کند تا از فایل‌های لوکال استفاده نشود"""
+    if os.path.exists(ASSETS_DIR):
+        print(f"🧹 Cleaning up local assets: {ASSETS_DIR}...")
+        shutil.rmtree(ASSETS_DIR)
+        print("✅ Assets folder removed.")
+    else:
+        print("ℹ️ Assets folder not found, skipping cleanup.")
 
 def create_html_files():
-    # محتوای اصلاح شده human_cam.html
+    # محتوای human_cam.html با استفاده از CDN آنلاین
     human_cam_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Human Camera - MoveNet</title>
+    <title>Human Camera - MoveNet (Online)</title>
     <style>
         body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #f0f0f0; font-family: sans-serif; height: 100vh; }
-        h1 { margin-bottom: 10px; }
+        h1 { margin-bottom: 10px; font-size: 1.2rem; }
         #canvas-wrapper { position: relative; width: 640px; height: 480px; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         video { position: absolute; top: 0; left: 0; width: 640px; height: 480px; object-fit: cover; transform: scaleX(-1); }
         canvas { position: absolute; top: 0; left: 0; width: 640px; height: 480px; transform: scaleX(-1); }
         #status { margin-top: 10px; font-weight: bold; color: #333; }
-        #error-log { margin-top: 10px; color: red; font-size: 0.9rem; white-space: pre-wrap; }
+        #error-log { margin-top: 10px; color: red; font-size: 0.8rem; white-space: pre-wrap; max-width: 90%; text-align: left; }
     </style>
     
-    <!-- کتابخانه‌ها -->
-    <script src="./assets/tf.min.js"></script>
-    <script src="./assets/tf-backend-webgl.js"></script>
-    <script src="./assets/tf-converter.js"></script>
-    <script src="./assets/pose-detection.js"></script>
+    <!-- لود کردن کتابخانه‌ها از CDN (نیاز به اینترنت/VPN) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.18.0/dist/tf-backend-webgl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0/dist/pose-detection.js"></script>
 </head>
 <body>
-    <h1>Smart Human Cam</h1>
+    <h1>Smart Human Cam (Online Mode)</h1>
     <div id="canvas-wrapper">
         <video id="video" playsinline></video>
         <canvas id="output"></canvas>
@@ -104,47 +57,68 @@ def create_html_files():
 
         function logError(msg) {
             console.error(msg);
-            errorLog.textContent += msg + "\\n";
+            errorLog.textContent += "❌ " + msg + "\\n";
             statusDiv.textContent = "Error occurred.";
         }
 
         async function setupCamera() {
             try {
+                // تلاش برای دوربین پشت و سپس جلو
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: 640, height: 480, facingMode: 'user' }
+                    video: { 
+                        width: 640, 
+                        height: 480, 
+                        facingMode: 'environment' 
+                    }
                 });
                 video.srcObject = stream;
                 return new Promise((resolve) => {
                     video.onloadedmetadata = () => {
                         video.play();
+                        // تنظیم ابعاد کانواس بر اساس سایز واقعی ویدیو
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        video.width = video.videoWidth;
+                        video.height = video.videoHeight;
                         resolve(video);
                     };
                 });
             } catch (err) {
-                logError("Camera Error: " + err.message);
+                logError("Camera Access Error: " + err.message);
                 throw err;
             }
         }
 
         async function loadModel() {
             try {
-                statusDiv.textContent = "Loading TensorFlow...";
-                if (typeof tf === 'undefined') throw new Error("tf is undefined");
+                statusDiv.textContent = "Loading TensorFlow (Online)...";
                 
+                // بررسی لود شدن TF
+                if (typeof tf === 'undefined') {
+                    throw new Error("TensorFlow JS failed to load from CDN.");
+                }
+                console.log("TF Version:", tf.version.tfjs);
+
                 await tf.setBackend('webgl');
                 await tf.ready();
                 
-                statusDiv.textContent = "Loading Detector (Local)...";
-                const detectorConfig = {
-                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-                    modelUrl: './assets/movenet/model.json'
-                };
-                detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
+                statusDiv.textContent = "Loading MoveNet Model (Online)...";
                 
-                statusDiv.textContent = "Running...";
+                // تنظیمات مدل برای دانلود از سرور گوگل
+                const detectorConfig = {
+                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
+                };
+                
+                // ساخت دتکتور (خودکار مدل را دانلود می‌کند)
+                detector = await poseDetection.createDetector(
+                    poseDetection.SupportedModels.MoveNet, 
+                    detectorConfig
+                );
+                
+                statusDiv.textContent = "Running AI...";
                 detectPose();
             } catch (err) {
-                logError("Setup Error: " + err.message);
+                logError("Model Loading Error: " + err.message);
             }
         }
 
@@ -152,77 +126,91 @@ def create_html_files():
             if (!detector) return;
             try {
                 const poses = await detector.estimatePoses(video);
+                
+                // پاک کردن و رسم مجدد
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
                 if (poses && poses.length > 0) {
                     poses[0].keypoints.forEach(keypoint => {
+                        // فقط نقاط با دقت بالای 30% را رسم کن
                         if (keypoint.score > 0.3) {
+                            const x = keypoint.x;
+                            const y = keypoint.y;
+                            
                             ctx.beginPath();
-                            ctx.arc(keypoint.x, keypoint.y, 5, 0, 2 * Math.PI);
-                            ctx.fillStyle = 'aqua';
+                            ctx.arc(x, y, 6, 0, 2 * Math.PI);
+                            ctx.fillStyle = '#00FF00'; // سبز روشن
                             ctx.fill();
+                            ctx.strokeStyle = '#FFFFFF';
+                            ctx.stroke();
                         }
                     });
                 }
+                
                 requestAnimationFrame(detectPose);
             } catch (err) {
+                 console.error(err);
                  requestAnimationFrame(detectPose);
             }
         }
 
-        setupCamera().then(loadModel);
+        // شروع برنامه
+        setupCamera().then(loadModel).catch(e => logError("Init failed: " + e.message));
     </script>
 </body>
 </html>"""
 
-    # فایل ایندکس
+    # فایل ایندکس ساده
     index_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Smart Tools Hub</title>
-    <style>body{text-align:center;padding:50px;font-family:sans-serif;} a{display:block;margin:20px;font-size:1.5rem;}</style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body{text-align:center; padding:50px; font-family:sans-serif; background:#333; color:white;} 
+        a{display:block; margin:20px auto; padding:15px; background:#007bff; color:white; text-decoration:none; border-radius:8px; max-width:300px;}
+    </style>
 </head>
 <body>
     <h1>Select Tool</h1>
-    <a href="human_cam.html">Human Detection (MoveNet)</a>
-    <a href="general_cam.html">General Camera</a>
+    <a href="human_cam.html">Human Detection (Online Mode)</a>
 </body>
 </html>"""
 
-    general_cam_content = """<!DOCTYPE html><html><body><h1>General Cam</h1></body></html>"""
-
+    # نوشتن فایل‌ها
+    os.makedirs(ROOT_DIR, exist_ok=True)
+    
     with open(os.path.join(ROOT_DIR, "human_cam.html"), "w") as f:
         f.write(human_cam_content)
+    
     with open(os.path.join(ROOT_DIR, "index.html"), "w") as f:
         f.write(index_content)
-    with open(os.path.join(ROOT_DIR, "general_cam.html"), "w") as f:
-        f.write(general_cam_content)
     
-    print("✅ HTML files generated.")
+    print("✅ HTML files generated (CDN Mode).")
 
 def configure_git_and_push():
     print("🚀 Configuring Git and Pushing changes...")
     try:
-        # تنظیمات هویت برای گیت در محیط Actions
+        # تنظیم هویت گیت‌هاب اکشن
         subprocess.run(["git", "config", "--global", "user.email", "actions@github.com"], check=True)
         subprocess.run(["git", "config", "--global", "user.name", "GitHub Action"], check=True)
         
-        # اضافه کردن تمام فایل‌ها
+        # استیج کردن همه تغییرات (شامل حذف assets)
         subprocess.run(["git", "add", "."], check=True)
         
-        # کامیت کردن (اگر تغییری نباشد ارور نمی‌دهد)
-        subprocess.run(["git", "commit", "-m", "Auto-build assets and HTML via GitHub Action"], check=False)
+        # کامیت
+        subprocess.run(["git", "commit", "-m", "Switch to Online CDN mode and clean local assets"], check=False)
         
-        # پوش کردن
+        # پوش
         subprocess.run(["git", "push"], check=True)
         print("✅ Done! Changes pushed to repo.")
     except subprocess.CalledProcessError as e:
         print(f"❌ Git Operation Failed: {e}")
 
 if __name__ == "__main__":
-    print("--- Starting Auto-Builder (GitHub Actions Mode) ---")
-    setup_directories()
-    download_assets()
+    print("--- Starting Auto-Builder (CDN Mode) ---")
+    clean_assets()
     create_html_files()
     configure_git_and_push()
     print("--- Finished ---")
