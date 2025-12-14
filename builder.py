@@ -3,214 +3,276 @@ import shutil
 import subprocess
 
 # --- تنظیمات ---
-ASSETS_DIR = "smart-tools/assets"
 ROOT_DIR = "smart-tools"
+ASSETS_DIR = os.path.join(ROOT_DIR, "assets")
 
-def clean_assets():
-    """پوشه assets را کامل حذف می‌کند تا از فایل‌های لوکال استفاده نشود"""
+def clean_and_setup():
+    """پاکسازی فایل‌های قدیمی و ساخت پوشه ریشه"""
+    # اگر پوشه assets وجود دارد، پاکش کن تا تداخل ایجاد نشود
     if os.path.exists(ASSETS_DIR):
-        print(f"🧹 Cleaning up local assets: {ASSETS_DIR}...")
+        print("🧹 Cleaning old assets...")
         shutil.rmtree(ASSETS_DIR)
-        print("✅ Assets folder removed.")
-    else:
-        print("ℹ️ Assets folder not found, skipping cleanup.")
+    
+    os.makedirs(ROOT_DIR, exist_ok=True)
 
-def create_html_files():
-    # محتوای human_cam.html با استفاده از CDN آنلاین
-    human_cam_content = """<!DOCTYPE html>
+def create_human_cam():
+    """ساخت فایل تشخیص حرکت (انسان) - بهینه شده برای iOS"""
+    content = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Human Camera - MoveNet (Online)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Human Detection (Fix)</title>
     <style>
-        body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #f0f0f0; font-family: sans-serif; height: 100vh; }
-        h1 { margin-bottom: 10px; font-size: 1.2rem; }
-        #canvas-wrapper { position: relative; width: 640px; height: 480px; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        video { position: absolute; top: 0; left: 0; width: 640px; height: 480px; object-fit: cover; transform: scaleX(-1); }
-        canvas { position: absolute; top: 0; left: 0; width: 640px; height: 480px; transform: scaleX(-1); }
-        #status { margin-top: 10px; font-weight: bold; color: #333; }
-        #error-log { margin-top: 10px; color: red; font-size: 0.8rem; white-space: pre-wrap; max-width: 90%; text-align: left; }
+        body { margin: 0; background-color: #000; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        #canvas-wrapper { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        video { position: absolute; min-width: 100%; min-height: 100%; object-fit: cover; }
+        canvas { position: absolute; min-width: 100%; min-height: 100%; object-fit: cover; }
+        #overlay { position: absolute; top: 10px; left: 10px; z-index: 10; color: #0f0; font-family: monospace; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 4px; pointer-events: none;}
     </style>
     
-    <!-- لود کردن کتابخانه‌ها از CDN (نیاز به اینترنت/VPN) -->
+    <!-- کتابخانه‌های آنلاین -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.18.0/dist/tf-backend-webgl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0/dist/pose-detection.js"></script>
 </head>
 <body>
-    <h1>Smart Human Cam (Online Mode)</h1>
+    <div id="overlay">
+        Status: Initializing...<br>
+        FPS: <span id="fps">0</span>
+    </div>
     <div id="canvas-wrapper">
-        <video id="video" playsinline></video>
+        <!-- نکته مهم برای آیفون: playsinline و muted و autoplay -->
+        <video id="video" playsinline muted autoplay></video>
         <canvas id="output"></canvas>
     </div>
-    <div id="status">Initializing...</div>
-    <div id="error-log"></div>
 
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('output');
         const ctx = canvas.getContext('2d');
-        const statusDiv = document.getElementById('status');
-        const errorLog = document.getElementById('error-log');
+        const overlay = document.getElementById('overlay');
+        const fpsSpan = document.getElementById('fps');
         let detector;
+        let lastFrameTime = 0;
+        let isRunning = true;
 
-        function logError(msg) {
-            console.error(msg);
-            errorLog.textContent += "❌ " + msg + "\\n";
-            statusDiv.textContent = "Error occurred.";
+        function updateStatus(msg) {
+            overlay.innerHTML = msg + "<br>FPS: <span id='fps'>...</span>";
         }
 
         async function setupCamera() {
             try {
-                // تلاش برای دوربین پشت و سپس جلو
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        width: 640, 
-                        height: 480, 
-                        facingMode: 'environment' 
-                    }
+                    video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
+                    audio: false
                 });
                 video.srcObject = stream;
+                
                 return new Promise((resolve) => {
                     video.onloadedmetadata = () => {
                         video.play();
-                        // تنظیم ابعاد کانواس بر اساس سایز واقعی ویدیو
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
-                        video.width = video.videoWidth;
-                        video.height = video.videoHeight;
                         resolve(video);
                     };
                 });
             } catch (err) {
-                logError("Camera Access Error: " + err.message);
-                throw err;
+                alert("Camera Error: " + err.message);
             }
         }
 
         async function loadModel() {
             try {
-                statusDiv.textContent = "Loading TensorFlow (Online)...";
-                
-                // بررسی لود شدن TF
-                if (typeof tf === 'undefined') {
-                    throw new Error("TensorFlow JS failed to load from CDN.");
-                }
-                console.log("TF Version:", tf.version.tfjs);
-
-                await tf.setBackend('webgl');
+                updateStatus("Loading AI...");
                 await tf.ready();
-                
-                statusDiv.textContent = "Loading MoveNet Model (Online)...";
-                
-                // تنظیمات مدل برای دانلود از سرور گوگل
-                const detectorConfig = {
-                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
-                };
-                
-                // ساخت دتکتور (خودکار مدل را دانلود می‌کند)
-                detector = await poseDetection.createDetector(
-                    poseDetection.SupportedModels.MoveNet, 
-                    detectorConfig
-                );
-                
-                statusDiv.textContent = "Running AI...";
-                detectPose();
+                const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
+                detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
+                updateStatus("System Ready");
+                detectLoop();
             } catch (err) {
-                logError("Model Loading Error: " + err.message);
+                updateStatus("AI Error: " + err.message);
+                console.error(err);
             }
         }
 
-        async function detectPose() {
-            if (!detector) return;
+        async function detectLoop() {
+            if (!isRunning) return;
+            
+            const now = performance.now();
+            const fps = 1000 / (now - lastFrameTime);
+            lastFrameTime = now;
+            if(fpsSpan) fpsSpan.innerText = Math.round(fps);
+
+            // اطمینان از اینکه کانواس هم‌اندازه ویدیو است
+            if (canvas.width !== video.videoWidth) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+            }
+
+            // پاک کردن کانواس
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
             try {
-                const poses = await detector.estimatePoses(video);
-                
-                // پاک کردن و رسم مجدد
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                if (poses && poses.length > 0) {
-                    poses[0].keypoints.forEach(keypoint => {
-                        // فقط نقاط با دقت بالای 30% را رسم کن
-                        if (keypoint.score > 0.3) {
-                            const x = keypoint.x;
-                            const y = keypoint.y;
-                            
-                            ctx.beginPath();
-                            ctx.arc(x, y, 6, 0, 2 * Math.PI);
-                            ctx.fillStyle = '#00FF00'; // سبز روشن
-                            ctx.fill();
-                            ctx.strokeStyle = '#FFFFFF';
-                            ctx.stroke();
-                        }
-                    });
+                if (detector) {
+                    const poses = await detector.estimatePoses(video);
+                    if (poses && poses.length > 0) {
+                        drawSkeleton(poses[0].keypoints);
+                    }
                 }
-                
-                requestAnimationFrame(detectPose);
-            } catch (err) {
-                 console.error(err);
-                 requestAnimationFrame(detectPose);
+            } catch (error) {
+                console.log("Detection skip:", error);
             }
+
+            requestAnimationFrame(detectLoop);
         }
 
-        // شروع برنامه
-        setupCamera().then(loadModel).catch(e => logError("Init failed: " + e.message));
+        function drawSkeleton(keypoints) {
+            keypoints.forEach(point => {
+                if (point.score > 0.3) {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'aqua';
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            });
+        }
+
+        setupCamera().then(loadModel);
     </script>
 </body>
 </html>"""
+    with open(os.path.join(ROOT_DIR, "human_cam.html"), "w") as f:
+        f.write(content)
 
-    # فایل ایندکس ساده
-    index_content = """<!DOCTYPE html>
+def create_object_cam():
+    """بازسازی فایل تشخیص اشیا (Coco-SSD) با CDN"""
+    content = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Smart Tools Hub</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Object Detection (Coco-SSD)</title>
     <style>
-        body{text-align:center; padding:50px; font-family:sans-serif; background:#333; color:white;} 
-        a{display:block; margin:20px auto; padding:15px; background:#007bff; color:white; text-decoration:none; border-radius:8px; max-width:300px;}
+        body { margin: 0; background: #222; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        video { position: absolute; min-width: 100%; min-height: 100%; object-fit: cover; }
+        canvas { position: absolute; min-width: 100%; min-height: 100%; object-fit: cover; }
+        #info { position: absolute; top: 10px; left: 10px; z-index: 20; color: yellow; background: rgba(0,0,0,0.7); padding: 5px; }
+    </style>
+    <!-- لود کتابخانه‌ها -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+</head>
+<body>
+    <div id="info">Loading Object Detection...</div>
+    <video id="video" playsinline muted autoplay></video>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const info = document.getElementById('info');
+        let model;
+
+        async function start() {
+            try {
+                // 1. راه اندازی دوربین
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' }, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+                
+                await new Promise(r => video.onloadedmetadata = r);
+                video.play();
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // 2. لود مدل
+                info.innerText = "Loading Model...";
+                model = await cocoSsd.load();
+                info.innerText = "Running...";
+                
+                predict();
+            } catch (e) {
+                info.innerText = "Error: " + e.message;
+            }
+        }
+
+        async function predict() {
+            // اصلاح سایز کانواس در صورت چرخش گوشی
+            if (canvas.width !== video.videoWidth) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // کشیدن مستطیل‌ها
+            if(model) {
+                const predictions = await model.detect(video);
+                predictions.forEach(prediction => {
+                    const [x, y, width, height] = prediction.bbox;
+                    
+                    ctx.strokeStyle = '#00FFFF';
+                    ctx.lineWidth = 4;
+                    ctx.strokeRect(x, y, width, height);
+                    
+                    ctx.fillStyle = '#00FFFF';
+                    ctx.font = '18px Arial';
+                    ctx.fillText(prediction.class + ' ' + Math.round(prediction.score * 100) + '%', x, y > 10 ? y - 5 : 10);
+                });
+            }
+
+            requestAnimationFrame(predict);
+        }
+
+        start();
+    </script>
+</body>
+</html>"""
+    with open(os.path.join(ROOT_DIR, "general_cam.html"), "w") as f:
+        f.write(content)
+
+def create_index():
+    content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Tools Hub</title>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 20px; background: #1a1a1a; color: white; }
+        h1 { margin-bottom: 30px; }
+        .btn { display: block; background: #007AFF; color: white; padding: 20px; margin: 15px auto; border-radius: 12px; text-decoration: none; font-size: 1.2rem; max-width: 300px; }
+        .btn:active { opacity: 0.8; transform: scale(0.98); }
     </style>
 </head>
 <body>
-    <h1>Select Tool</h1>
-    <a href="human_cam.html">Human Detection (Online Mode)</a>
+    <h1>Smart AI Tools</h1>
+    <a href="human_cam.html" class="btn">👤 Human Detection (MoveNet)</a>
+    <a href="general_cam.html" class="btn">📦 Object Detection (Coco-SSD)</a>
+    <p style="color: #666; font-size: 0.8rem; margin-top: 50px;">Running in CDN Mode (Requires VPN)</p>
 </body>
 </html>"""
-
-    # نوشتن فایل‌ها
-    os.makedirs(ROOT_DIR, exist_ok=True)
-    
-    with open(os.path.join(ROOT_DIR, "human_cam.html"), "w") as f:
-        f.write(human_cam_content)
-    
     with open(os.path.join(ROOT_DIR, "index.html"), "w") as f:
-        f.write(index_content)
-    
-    print("✅ HTML files generated (CDN Mode).")
+        f.write(content)
 
-def configure_git_and_push():
-    print("🚀 Configuring Git and Pushing changes...")
-    try:
-        # تنظیم هویت گیت‌هاب اکشن
-        subprocess.run(["git", "config", "--global", "user.email", "actions@github.com"], check=True)
-        subprocess.run(["git", "config", "--global", "user.name", "GitHub Action"], check=True)
-        
-        # استیج کردن همه تغییرات (شامل حذف assets)
-        subprocess.run(["git", "add", "."], check=True)
-        
-        # کامیت
-        subprocess.run(["git", "commit", "-m", "Switch to Online CDN mode and clean local assets"], check=False)
-        
-        # پوش
-        subprocess.run(["git", "push"], check=True)
-        print("✅ Done! Changes pushed to repo.")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Git Operation Failed: {e}")
+def push_changes():
+    print("🚀 Pushing to GitHub...")
+    subprocess.run(["git", "config", "--global", "user.email", "actions@github.com"], check=False)
+    subprocess.run(["git", "config", "--global", "user.name", "GitHub Action"], check=False)
+    subprocess.run(["git", "add", "."], check=False)
+    subprocess.run(["git", "commit", "-m", "Fix: iOS video freeze and restore object detection"], check=False)
+    subprocess.run(["git", "push"], check=False)
+    print("✅ Done.")
 
 if __name__ == "__main__":
-    print("--- Starting Auto-Builder (CDN Mode) ---")
-    clean_assets()
-    create_html_files()
-    configure_git_and_push()
-    print("--- Finished ---")
+    clean_and_setup()
+    create_human_cam()
+    create_object_cam()
+    create_index()
+    push_changes()
