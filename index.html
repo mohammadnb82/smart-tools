@@ -1,110 +1,127 @@
+
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>پلتفرم ابزارهای هوشمند</title>
-
-<style>
-body {
-    margin: 0;
-    background: #000;
-    color: #00ffcc;
-    font-family: Tahoma, Arial, sans-serif;
-    text-align: center;
-}
-
-header {
-    padding: 25px 10px;
-    border-bottom: 1px solid #00ffcc;
-}
-
-h1 {
-    margin: 0;
-    font-size: 26px;
-}
-
-p {
-    margin-top: 10px;
-    color: #aaa;
-}
-
-section {
-    padding: 30px 10px;
-}
-
-.tool-box {
-    border: 1px solid #00ffcc;
-    margin: 15px auto;
-    padding: 20px;
-    max-width: 420px;
-}
-
-.tool-box h2 {
-    margin-top: 0;
-}
-
-.tool-box p {
-    font-size: 14px;
-}
-
-a.button {
-    display: inline-block;
-    margin-top: 15px;
-    padding: 10px 25px;
-    border: 1px solid #00ffcc;
-    color: #00ffcc;
-    text-decoration: none;
-}
-
-a.button:hover {
-    background: #00ffcc;
-    color: #000;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Offline Camera</title>
+    <style>
+        body { margin: 0; background: #000; color: #0f0; font-family: monospace; overflow: hidden; }
+        #grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 100vh; width: 100vw; gap: 2px; }
+        .panel { position: relative; background: #111; border: 1px solid #333; overflow: hidden; }
+        video, canvas, img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+        .overlay { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.7); padding: 5px; font-size: 10px; z-index: 10; pointer-events: none; direction: ltr; }
+        #controls { position: absolute; bottom: 10px; left: 10px; z-index: 100; background: rgba(0,0,0,0.8); padding: 5px; border: 1px solid #0f0; }
+        .status-led { width: 8px; height: 8px; border-radius: 50%; background: #333; display: inline-block; margin-left: 5px; }
+        .active { background: #f00; box-shadow: 0 0 5px #f00; }
+        #best-shot-img { display: none; z-index: 5; }
+        #best-shot-img.show { display: block; }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:999; display:flex; justify-content:center; align-items:center; text-align:center; font-size: 1.5em; }
+    </style>
+    <!-- لود کردن فایل‌های لوکال -->
+    <script src="assets/tf.min.js"></script>
+    <script src="assets/coco-ssd.min.js"></script>
 </head>
-
 <body>
 
-<header>
-    <h1>پلتفرم ابزارهای هوشمند</h1>
-    <p>ابزارهای رایگان • اجرا مستقیم در مرورگر • بدون سرور</p>
-</header>
+<div id="loading">در حال بارگذاری سیستم امنیتی...<br>لطفاً صبر کنید (کاملاً آفلاین)</div>
 
-<section>
-
-    <div class="tool-box">
-        <h2>ابزارهای هوشمند</h2>
-        <p>
-            ابزارهایی که با استفاده از دوربین، تصویر و منطق هوشمند،
-            مستقیماً در مرورگر اجرا می‌شوند.
-        </p>
-        <a class="button" href="tools/ai.html">
-            ورود به ابزار تشخیص حرکت
-        </a>
+<div id="grid">
+    <!-- پنل ۱: حساسیت بالا -->
+    <div class="panel"><canvas id="c1"></canvas><div class="overlay">P1: High Sensitivity (>600)</div></div>
+    <!-- پنل ۲: حیوانات -->
+    <div class="panel"><canvas id="c2"></canvas><div class="overlay">P2: Animal Track (>2200)</div></div>
+    <!-- پنل ۳: دستی -->
+    <div class="panel"><canvas id="c3"></canvas><div class="overlay">P3: Manual Control</div></div>
+    <!-- پنل ۴: هوش مصنوعی -->
+    <div class="panel">
+        <img id="best-shot-img">
+        <canvas id="c4"></canvas>
+        <div class="overlay">P4: AI Human Best Shot <span id="ai-status" class="status-led"></span></div>
     </div>
+</div>
 
-    <div class="tool-box">
-        <h2>ابزارهای مدیا</h2>
-        <p>
-            ابزارهای پردازش ویدیو، صدا و تصویر بدون نیاز به نصب برنامه.
-        </p>
-        <span style="color:#555;">(به‌زودی)</span>
-    </div>
+<div id="controls">
+    <button onclick="window.location.reload()">Reload</button>
+    <span style="font-size:10px">OFFLINE MODE ACTIVE</span>
+</div>
+<video id="webcam" autoplay playsinline muted style="display:none"></video>
 
-    <div class="tool-box">
-        <h2>ابزارهای کاربردی</h2>
-        <p>
-            ابزارهای ساده و مفید برای استفاده روزمره.
-        </p>
-        <span style="color:#555;">(به‌زودی)</span>
-    </div>
+<script>
+    const video = document.getElementById('webcam');
+    const loading = document.getElementById('loading');
+    const aiLed = document.getElementById('ai-status');
+    const bestShotImg = document.getElementById('best-shot-img');
+    const canvases = [document.getElementById('c1'), document.getElementById('c2'), document.getElementById('c3'), document.getElementById('c4')];
+    const ctxs = canvases.map(c => c.getContext('2d'));
+    let model = null;
+    let prevFrameData = null;
 
-</section>
+    async function start() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+            video.srcObject = stream;
+            await new Promise(r => video.onloadedmetadata = () => { video.play(); r(); });
+            
+            // لود مدل از پوشه assets
+            model = await cocoSsd.load({ modelUrl: 'assets/model.json' });
+            loading.style.display = 'none';
+            detect();
+        } catch(e) {
+            loading.innerHTML = "خطا: " + e.message;
+        }
+    }
 
-<footer style="padding:20px; color:#555; font-size:13px;">
-    ساخته شده برای استفاده جهانی — اجرا در هر دستگاه
-</footer>
+    async function detect() {
+        // رسم تصویر در کانواس‌ها
+        canvases.forEach((c, i) => {
+            if (i === 3 && bestShotImg.classList.contains('show')) return; // اگر عکس گرفته شده، آپدیت نکن
+            c.width = video.videoWidth;
+            c.height = video.videoHeight;
+            ctxs[i].drawImage(video, 0, 0, c.width, c.height);
+        });
 
+        // 1. تشخیص حرکت ساده (P1)
+        const frame = ctxs[0].getImageData(0, 0, 100, 100);
+        let score = 0;
+        if (prevFrameData) {
+            for(let i=0; i<frame.data.length; i+=4) score += Math.abs(frame.data[i] - prevFrameData.data[i]);
+        }
+        prevFrameData = frame;
+        if (score > 60000) { ctxs[0].strokeStyle='red'; ctxs[0].strokeRect(10,10,canvases[0].width-20,canvases[0].height-20); }
+
+        // 2. هوش مصنوعی (P4)
+        if (model) {
+            const predictions = await model.detect(video);
+            let human = false;
+            predictions.forEach(p => {
+                const [x,y,w,h] = p.bbox;
+                if(p.class === 'person') {
+                    human = true;
+                    ctxs[3].strokeStyle = '#0f0'; ctxs[3].lineWidth = 4; ctxs[3].strokeRect(x,y,w,h);
+                    if(p.score > 0.8) {
+                        bestShotImg.src = canvases[3].toDataURL();
+                        bestShotImg.classList.add('show');
+                        playBeep();
+                    }
+                }
+            });
+            if(human) aiLed.classList.add('active'); else aiLed.classList.remove('active');
+            if(!human) bestShotImg.classList.remove('show');
+        }
+        requestAnimationFrame(detect);
+    }
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep() {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.frequency.value = 800; g.gain.value = 0.1;
+        o.start(); o.stop(audioCtx.currentTime + 0.1);
+    }
+
+    start();
+</script>
 </body>
 </html>
