@@ -4,50 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پنل امنیتی مرکزی</title>
+    <title>پنل امنیتی</title>
     <style>
-        body { background-color: #0f172a; color: white; font-family: Tahoma, sans-serif; text-align: center; padding: 20px; }
-        .container { max-width: 500px; margin: 0 auto; }
-        h1 { color: #38bdf8; margin-bottom: 40px; }
+        body { background: #111; color: white; font-family: sans-serif; text-align: center; padding-top: 50px; }
         .btn {
-            display: block; width: 100%; padding: 25px; margin: 20px 0;
-            background: #1e293b; color: #fff; text-decoration: none;
-            border: 2px solid #334155; border-radius: 15px; font-size: 1.3em;
-            transition: 0.3s; display: flex; align-items: center; justify-content: space-between;
+            display: block; width: 85%; max-width: 400px; margin: 20px auto; padding: 25px;
+            border-radius: 20px; text-decoration: none; font-size: 20px; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
-        .btn:hover { transform: scale(1.02); }
-        .btn-human:hover { background: #334155; border-color: #ef4444; } 
-        .btn-general:hover { background: #334155; border-color: #38bdf8; } 
-        
-        .icon { font-size: 1.5em; }
-        .footer { margin-top: 50px; color: #64748b; font-size: 0.8em; }
-        .badge { background: #000; padding: 5px 10px; border-radius: 10px; font-size: 0.7em; opacity: 0.7; }
+        .human { background: linear-gradient(45deg, #ff0055, #ff5500); color: white; }
+        .general { background: linear-gradient(45deg, #0055ff, #00aaff); color: white; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🛡️ انتخاب دوربین نظارتی</h1>
-        
-        <a href="human_cam.html" class="btn btn-human">
-            <div style="text-align:right">
-                <div>📷 تشخیص انسان</div>
-                <div class="badge">مود امنیتی</div>
-            </div>
-            <span class="icon">👤</span>
-        </a>
-        
-        <a href="general_cam.html" class="btn btn-general">
-            <div style="text-align:right">
-                <div>🎥 تشخیص اشیاء</div>
-                <div class="badge">مود عمومی (General)</div>
-            </div>
-            <span class="icon">🌍</span>
-        </a>
-
-        <div class="footer">
-            سیستم نظارت خودکار | 2025-12-14 15:07
-        </div>
-    </div>
+    <h2>انتخاب دوربین</h2>
+    <a href="human_cam.html" class="btn human">تشخیص آناتومی انسان 🧠<br><span style="font-size:12px; opacity:0.8">(اولویت با چهره و هویت)</span></a>
+    <a href="general_cam.html" class="btn general">عمومی (همه اشیاء) 📷<br><span style="font-size:12px; opacity:0.8">(ماشین، حیوان، کیف و...)</span></a>
 </body>
 </html>
     

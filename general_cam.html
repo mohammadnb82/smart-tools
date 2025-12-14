@@ -5,208 +5,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>دوربین عمومی (همه اشیاء)</title>
-    <script src="assets/tf.min.js"></script>
-    <script src="assets/coco-ssd.min.js"></script>
     <style>
-        * { box-sizing: border-box; }
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .toolbar {
-            background: #111; padding: 5px 10px; display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 2px solid #38bdf8; height: 60px;
-        }
-        .control-group { display: flex; align-items: center; gap: 10px; }
-        label { font-size: 11px; color: #aaa; }
-        input[type=range] { width: 80px; accent-color: #38bdf8; }
-        button {
-            background: #222; color: white; border: 1px solid #444; padding: 5px 10px; border-radius: 5px; cursor: pointer;
-        }
-        #camera-wrapper {
-            flex: 1; position: relative; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden;
-        }
-        video { width: 100%; height: 100%; object-fit: contain; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        #best-shot-panel {
-            height: 160px; background: #0a0a0a; border-top: 1px solid #333; display: flex;
-            align-items: center; padding: 10px; gap: 15px;
-        }
-        .panel-info { flex: 1; font-size: 13px; color: #ccc; padding-right: 5px; }
-        .panel-info h3 { margin: 0 0 5px 0; color: #38bdf8; font-size: 16px; }
-        .shot-container {
-            width: 110px; height: 110px; background: #000; border: 2px dashed #444;
-            border-radius: 8px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center;
-        }
-        .shot-container img { width: 100%; height: 100%; object-fit: cover; }
-        .score-badge {
-            position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.8);
-            color: #38bdf8; font-size: 10px; padding: 2px 4px; border-top-left-radius: 5px;
-        }
-        #status-overlay {
-            position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6);
-            color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; z-index: 10;
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background: #000; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-family: sans-serif; }
+        #header { position: absolute; top:0; left:0; right:0; padding:10px; background:rgba(0,0,0,0.7); z-index:10; display:flex; justify-content:space-between; }
+        #viewport { flex:1; position:relative; display:flex; justify-content:center; align-items:center; background:#111; }
+        video, canvas { position:absolute; max-width:100%; max-height:100%; }
+        #gallery { height:130px; background:#111; display:flex; overflow-x:auto; padding:5px; gap:5px; z-index:11; }
+        .card { width:100px; height:120px; background:#222; border:1px solid #00aaff; border-radius:5px; flex:0 0 auto; overflow:hidden; }
+        .card img { width:100%; height:90px; object-fit:cover; }
+        .card div { font-size:10px; text-align:center; padding:2px; color:#00aaff; }
+        .btn { color:#fff; text-decoration:none; border:1px solid #fff; padding:3px 8px; border-radius:10px; font-size:12px; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest"></script>
 </head>
 <body>
-    <div class="toolbar">
-        <a href="index.html" style="text-decoration: none; font-size: 20px;">🔙</a>
-        <div style="font-weight: bold; color: #38bdf8; font-size: 14px;">دوربین عمومی (همه اشیاء)</div>
-        <div class="control-group">
-            <div style="text-align: center;">
-                <label>حساسیت: <span id="sense-val">50%</span></label><br>
-                <input type="range" id="sensitivity" min="10" max="90" value="50" oninput="updateSense()">
-            </div>
-            <button id="mute-btn" onclick="toggleMute()">🔊</button>
-        </div>
+    <div id="header">
+        <div style="color:#00aaff; font-weight:bold;">دوربین عمومی</div>
+        <a href="index.html" class="btn">بازگشت</a>
     </div>
-
-    <div id="camera-wrapper">
-        <div id="status-overlay">در حال بارگذاری هوش مصنوعی...</div>
+    <div id="viewport">
         <video id="webcam" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
     </div>
-
-    <div id="best-shot-panel">
-        <div class="panel-info">
-            <h3>شکار لحظه‌ها 🎯</h3>
-            <p id="shot-desc">منتظر تشخیص...</p>
-        </div>
-        <div class="shot-container" id="best-shot-box">
-            <span style="color: #444; font-size: 30px;">Wait</span>
-        </div>
-    </div>
+    <div id="gallery"></div>
 
     <script>
         const video = document.getElementById('webcam');
         const canvas = document.getElementById('canvas');
-        const statusOverlay = document.getElementById('status-overlay');
-        const senseLabel = document.getElementById('sense-val');
-        const senseInput = document.getElementById('sensitivity');
-        const muteBtn = document.getElementById('mute-btn');
-        const bestShotBox = document.getElementById('best-shot-box');
-        const shotDesc = document.getElementById('shot-desc');
+        const ctx = canvas.getContext('2d');
+        const gallery = document.getElementById('gallery');
+        let model = null;
 
-        let model = undefined;
-        let isMuted = false;
-        let detectionThreshold = 0.5;
-        let bestScore = 0; 
-        
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function beep() {
-            if (isMuted) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.value = 1200;
-            gain.gain.value = 0.05;
-            osc.start();
-            setTimeout(() => osc.stop(), 100);
+        async function setup() {
+            const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false});
+            video.srcObject = stream;
+            return new Promise(r => { video.onloadedmetadata = () => { video.play(); r(); } });
         }
 
-        function toggleMute() {
-            isMuted = !isMuted;
-            muteBtn.innerText = isMuted ? "🔇" : "🔊";
-            muteBtn.style.opacity = isMuted ? "0.5" : "1";
+        function addCard(prediction) {
+            const d = document.createElement('div');
+            d.className = 'card';
+            const [x,y,w,h] = prediction.bbox;
+            const tCanvas = document.createElement('canvas');
+            tCanvas.width = w; tCanvas.height = h;
+            tCanvas.getContext('2d').drawImage(video, x, y, w, h, 0, 0, w, h);
+            d.innerHTML = `<img src="${tCanvas.toDataURL()}"><div>${prediction.class} ${Math.round(prediction.score*100)}%</div>`;
+            gallery.prepend(d);
         }
 
-        function updateSense() {
-            const val = senseInput.value;
-            senseLabel.innerText = val + "%";
-            detectionThreshold = val / 100;
-        }
-
-        cocoSsd.load().then(loadedModel => {
-            model = loadedModel;
-            statusOverlay.innerText = "✅ AI فعال شد";
-            startCamera();
-        });
-
-        async function startCamera() {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        'audio': false,
-                        'video': { facingMode: 'environment' }
-                    });
-                    video.srcObject = stream;
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        detectFrame();
-                    };
-                } catch (err) {
-                    statusOverlay.innerText = "❌ خطا: دوربین در دسترس نیست";
-                }
-            }
-        }
-
-        function detectFrame() {
-            if (!model) return;
-
-            model.detect(video).then(predictions => {
-                renderPredictions(predictions);
-                requestAnimationFrame(detectFrame);
-            });
-        }
-
-        function renderPredictions(predictions) {
-            const ctx = canvas.getContext("2d");
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-            let objectFound = false;
-
-            predictions.forEach(prediction => {
-                if (prediction.score > detectionThreshold) {
-                    
-                    objectFound = true;
-                    const [x, y, width, height] = prediction.bbox;
-                    
-                    ctx.strokeStyle = "#00FFFF";
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(x, y, width, height);
-                    
-                    ctx.fillStyle = "#00FFFF";
-                    ctx.font = "16px Arial";
-                    ctx.fillText(prediction.class + " (" + Math.round(prediction.score*100) + "%)", x, y > 10 ? y - 5 : 10);
-
-                    const frameScore = prediction.score * (width * height);
-
-                    if (frameScore > bestScore) {
-                        bestScore = frameScore;
-                        updateBestShot(x, y, width, height, prediction.score, prediction.class);
-                        beep();
+        async function run() {
+            await setup();
+            model = await cocoSsd.load();
+            setInterval(async () => {
+                const preds = await model.detect(video);
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                preds.forEach(p => {
+                    if(p.score > 0.6) {
+                        ctx.strokeStyle = '#00aaff';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(...p.bbox);
+                        if (Math.random() > 0.95) addCard(p); 
                     }
-                }
-            });
-            
-            if (!objectFound && bestScore > 0) {
-                bestScore -= 500; 
-                if(bestScore < 0) bestScore = 0;
-            }
+                });
+            }, 100);
         }
-
-        function updateBestShot(x, y, w, h, score, label) {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = w;
-            tempCanvas.height = h;
-            const tCtx = tempCanvas.getContext('2d');
-            tCtx.drawImage(video, x, y, w, h, 0, 0, w, h);
-            
-            const imgUrl = tempCanvas.toDataURL('image/jpeg');
-
-            bestShotBox.innerHTML = `
-                <img src="${imgUrl}">
-                <div class="score-badge">${label}</div>
-            `;
-            
-            const time = new Date().toLocaleTimeString();
-            shotDesc.innerHTML = `
-                <span style="color:#38bdf8">✅ ${label}</span><br>
-                دقت: ${Math.round(score * 100)}%<br>
-                <span style="color:#666; font-size:10px">${time}</span>
-            `;
-        }
+        run();
     </script>
 </body>
 </html>
