@@ -3,124 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Human Detection (Fix)</title>
-    <style>
-        body { margin: 0; background-color: #000; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
-        #canvas-wrapper { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
-        video { position: absolute; min-width: 100%; min-height: 100%; object-fit: cover; }
-        canvas { position: absolute; min-width: 100%; min-height: 100%; object-fit: cover; }
-        #overlay { position: absolute; top: 10px; left: 10px; z-index: 10; color: #0f0; font-family: monospace; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 4px; pointer-events: none;}
-    </style>
-    
-    <!-- کتابخانه‌های آنلاین -->
+    <title>Human Detection</title>
+    <style>body{margin:0;background:#000;overflow:hidden}video,canvas{position:absolute;width:100%;height:100%;object-fit:cover}</style>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.18.0/dist/tf-backend-webgl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0/dist/pose-detection.js"></script>
 </head>
 <body>
-    <div id="overlay">
-        Status: Initializing...<br>
-        FPS: <span id="fps">0</span>
-    </div>
-    <div id="canvas-wrapper">
-        <!-- نکته مهم برای آیفون: playsinline و muted و autoplay -->
-        <video id="video" playsinline muted autoplay></video>
-        <canvas id="output"></canvas>
-    </div>
-
+    <video id="video" playsinline muted autoplay></video>
+    <canvas id="canvas"></canvas>
     <script>
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('output');
-        const ctx = canvas.getContext('2d');
-        const overlay = document.getElementById('overlay');
-        const fpsSpan = document.getElementById('fps');
-        let detector;
-        let lastFrameTime = 0;
-        let isRunning = true;
-
-        function updateStatus(msg) {
-            overlay.innerHTML = msg + "<br>FPS: <span id='fps'>...</span>";
-        }
-
-        async function setupCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
-                    audio: false
-                });
-                video.srcObject = stream;
-                
-                return new Promise((resolve) => {
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        resolve(video);
-                    };
-                });
-            } catch (err) {
-                alert("Camera Error: " + err.message);
-            }
-        }
-
-        async function loadModel() {
-            try {
-                updateStatus("Loading AI...");
-                await tf.ready();
-                const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
-                detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
-                updateStatus("System Ready");
-                detectLoop();
-            } catch (err) {
-                updateStatus("AI Error: " + err.message);
-                console.error(err);
-            }
-        }
-
-        async function detectLoop() {
-            if (!isRunning) return;
+        async function start() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
             
-            const now = performance.now();
-            const fps = 1000 / (now - lastFrameTime);
-            lastFrameTime = now;
-            if(fpsSpan) fpsSpan.innerText = Math.round(fps);
-
-            // اطمینان از اینکه کانواس هم‌اندازه ویدیو است
-            if (canvas.width !== video.videoWidth) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
+            const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+            video.srcObject = stream;
+            await new Promise(r => video.onloadedmetadata = r);
+            video.play();
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            await tf.ready();
+            const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING});
+            
+            async function render() {
+                if(canvas.width !== video.videoWidth) { canvas.width = video.videoWidth; canvas.height = video.videoHeight; }
+                const poses = await detector.estimatePoses(video);
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                poses.forEach(pose => {
+                    pose.keypoints.forEach(k => {
+                        if(k.score > 0.3) {
+                            ctx.beginPath(); ctx.arc(k.x, k.y, 5, 0, 2*Math.PI);
+                            ctx.fillStyle='aqua'; ctx.fill();
+                        }
+                    });
+                });
+                requestAnimationFrame(render);
             }
-
-            // پاک کردن کانواس
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            try {
-                if (detector) {
-                    const poses = await detector.estimatePoses(video);
-                    if (poses && poses.length > 0) {
-                        drawSkeleton(poses[0].keypoints);
-                    }
-                }
-            } catch (error) {
-                console.log("Detection skip:", error);
-            }
-
-            requestAnimationFrame(detectLoop);
+            render();
         }
-
-        function drawSkeleton(keypoints) {
-            keypoints.forEach(point => {
-                if (point.score > 0.3) {
-                    ctx.beginPath();
-                    ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
-                    ctx.fillStyle = 'aqua';
-                    ctx.fill();
-                    ctx.stroke();
-                }
-            });
-        }
-
-        setupCamera().then(loadModel);
+        start();
     </script>
 </body>
 </html>
