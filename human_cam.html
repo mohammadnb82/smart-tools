@@ -38,9 +38,13 @@
             background: #222; color: #aaa; text-align: center;
         }
         .score-high { color: #0f0; font-weight: bold; }
+        #error-log {
+            position: absolute; bottom: 150px; left: 10px; right: 10px;
+            color: red; background: rgba(0,0,0,0.8); padding: 5px; font-size: 10px;
+            display: none; z-index: 200; pointer-events: none;
+        }
     </style>
     
-    <!-- استفاده از کتابخانه‌های دانلود شده در پوشه assets -->
     <script src="assets/tf-core.js"></script>
     <script src="assets/tf-converter.js"></script>
     <script src="assets/tf-backend-webgl.js"></script>
@@ -59,7 +63,8 @@
         <a href="index.html" class="btn">BACK</a>
     </div>
     
-    <div id="status" style="position:absolute; top:60px; right:10px; z-index:90; font-size:12px; color:yellow;">Loading Model...</div>
+    <div id="status" style="position:absolute; top:60px; right:10px; z-index:90; font-size:12px; color:yellow;">Initializing System...</div>
+    <div id="error-log"></div>
 
     <div id="viewport">
         <video id="video" autoplay playsinline muted></video>
@@ -74,11 +79,18 @@
         const ctx = canvas.getContext('2d');
         const gallery = document.getElementById('gallery');
         const statusEl = document.getElementById('status');
+        const errorLog = document.getElementById('error-log');
         
         let detector = null;
         let isMuted = false;
         let sensitivity = 0.5;
         let subjects = []; 
+
+        function logError(msg) {
+            errorLog.style.display = 'block';
+            errorLog.innerText += "\n" + msg;
+            console.error(msg);
+        }
 
         // Audio Context
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -98,9 +110,17 @@
         document.getElementById('sensitivity').oninput = (e) => { sensitivity = e.target.value / 100; document.getElementById('sen-txt').innerText = e.target.value+'%'; };
 
         async function setupCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-            video.srcObject = stream;
-            return new Promise(resolve => { video.onloadedmetadata = () => { video.play(); resolve(); }; });
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+                return new Promise(resolve => { video.onloadedmetadata = () => { video.play(); resolve(); }; });
+            } catch(e) {
+                logError("Camera Error: " + e.message);
+                statusEl.innerText = "Camera Fail";
+            }
         }
 
         function analyzePose(keypoints) {
@@ -111,7 +131,7 @@
             keypoints.forEach((kp, index) => {
                 if (kp.score > sensitivity) {
                     if (index <= 4) {
-                        faceScore += 100; // امتیاز بالا برای چهره
+                        faceScore += 100; 
                     } else {
                         bodyScore += 1;
                     }
@@ -189,6 +209,8 @@
             const w = Math.min(video.videoWidth - minX, (maxX - minX) + 2*pad);
             const h = Math.min(video.videoHeight - minY, (maxY - minY) + 2*pad);
 
+            if (w <= 0 || h <= 0) return;
+
             const tCanvas = document.createElement('canvas');
             tCanvas.width = w; tCanvas.height = h;
             tCanvas.getContext('2d').drawImage(video, minX, minY, w, h, 0, 0, w, h);
@@ -207,7 +229,7 @@
             }
             
             const facePartsCount = poseData.faceScore / 100;
-            card.querySelector('.card-meta').innerHTML = `<span class="${scoreClass}">${desc}</span><br>Face Parts: ${facePartsCount}`;
+            card.querySelector('.card-meta').innerHTML = `<span class="${scoreClass}">${desc}</span><br>Parts: ${Math.floor(facePartsCount)}`;
             
             card.style.borderColor = '#fff';
             setTimeout(() => card.style.borderColor = poseData.faceScore > 0 ? '#0f0' : '#ff0055', 300);
@@ -216,19 +238,26 @@
         async function detect() {
             if (!detector) return;
             
-            const poses = await detector.estimatePoses(video);
-            
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            try {
+                const poses = await detector.estimatePoses(video, {
+                    maxPoses: 1,
+                    flipHorizontal: false
+                });
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            poses.forEach(pose => {
-                drawSkeleton(pose.keypoints);
-                const data = analyzePose(pose.keypoints);
-                if (data.totalScore > 0) {
-                    updateGallery(data, video);
-                }
-            });
+                poses.forEach(pose => {
+                    drawSkeleton(pose.keypoints);
+                    const data = analyzePose(pose.keypoints);
+                    if (data.totalScore > 0) {
+                        updateGallery(data, video);
+                    }
+                });
+            } catch(err) {
+                logError("Detect Error: " + err);
+            }
             
             requestAnimationFrame(detect);
         }
@@ -259,13 +288,29 @@
         }
 
         async function main() {
+            statusEl.innerText = "Camera Start...";
             await setupCamera();
-            statusEl.innerText = "Loading MoveNet...";
-            detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {
-                modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
-            });
-            statusEl.innerText = "";
-            detect();
+            
+            statusEl.innerText = "Loading AI Core...";
+            try {
+                await tf.ready();
+                await tf.setBackend('webgl');
+                
+                statusEl.innerText = "Loading Local Model...";
+                
+                // --- بارگذاری مدل از پوشه لوکال ---
+                detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {
+                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+                    modelUrl: 'assets/movenet/model.json' 
+                });
+                
+                statusEl.innerText = "";
+                detect();
+            } catch(e) {
+                statusEl.innerText = "AI FAILED";
+                logError("Setup Error: " + e.message + "\n" + e.stack);
+                alert("خطا در بارگذاری هوش مصنوعی: " + e.message);
+            }
         }
 
         main();

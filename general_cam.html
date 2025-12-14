@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>دوربین عمومی (همه اشیاء)</title>
+    <title>دوربین عمومی</title>
     <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; }
         body { margin: 0; background: #000; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-family: sans-serif; }
         #header { position: absolute; top:0; left:0; right:0; padding:10px; background:rgba(0,0,0,0.7); z-index:10; display:flex; justify-content:space-between; }
         #viewport { flex:1; position:relative; display:flex; justify-content:center; align-items:center; background:#111; }
@@ -17,27 +17,26 @@
         .card div { font-size:10px; text-align:center; padding:2px; color:#00aaff; }
         .btn { color:#fff; text-decoration:none; border:1px solid #fff; padding:3px 8px; border-radius:10px; font-size:12px; }
     </style>
-    
-    <!-- استفاده از کتابخانه‌های دانلود شده -->
     <script src="assets/tf.min.js"></script>
     <script src="assets/coco-ssd.js"></script>
 </head>
 <body>
     <div id="header">
-        <div style="color:#00aaff; font-weight:bold;">دوربین عمومی</div>
+        <div style="color:#00aaff;">دوربین عمومی</div>
         <a href="index.html" class="btn">بازگشت</a>
     </div>
+    <div id="status" style="position:absolute; top:50px; left:10px; color:yellow; font-size:12px;">Loading Model...</div>
     <div id="viewport">
         <video id="webcam" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
     </div>
     <div id="gallery"></div>
-
     <script>
         const video = document.getElementById('webcam');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const gallery = document.getElementById('gallery');
+        const statusEl = document.getElementById('status');
         let model = null;
 
         async function setup() {
@@ -59,21 +58,27 @@
 
         async function run() {
             await setup();
-            model = await cocoSsd.load();
-            setInterval(async () => {
-                const preds = await model.detect(video);
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.clearRect(0,0,canvas.width,canvas.height);
-                preds.forEach(p => {
-                    if(p.score > 0.6) {
-                        ctx.strokeStyle = '#00aaff';
-                        ctx.lineWidth = 2;
-                        ctx.strokeRect(...p.bbox);
-                        if (Math.random() > 0.95) addCard(p); 
-                    }
-                });
-            }, 100);
+            statusEl.innerText = "Loading COCO-SSD...";
+            // توجه: کوکو-اس‌اس‌دی هنوز تلاش می‌کند از اینترنت مدل بگیرد چون مدیریت آن پیچیده‌تر است
+            // اما چون فایل‌های اصلی JS لوکال هستند سرعت لود بهتر است
+            try {
+                model = await cocoSsd.load();
+                statusEl.innerText = "";
+                setInterval(async () => {
+                    const preds = await model.detect(video);
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.clearRect(0,0,canvas.width,canvas.height);
+                    preds.forEach(p => {
+                        if(p.score > 0.6) {
+                            ctx.strokeStyle = '#00aaff'; ctx.lineWidth = 2; ctx.strokeRect(...p.bbox);
+                            if (Math.random() > 0.98) addCard(p); 
+                        }
+                    });
+                }, 100);
+            } catch(e) {
+                statusEl.innerText = "Load Failed (Need Internet for Model)";
+            }
         }
         run();
     </script>

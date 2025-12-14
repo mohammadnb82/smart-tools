@@ -4,22 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پنل امنیتی</title>
+    <title>پنل امنیتی هوشمند</title>
     <style>
         body { background: #111; color: white; font-family: sans-serif; text-align: center; padding-top: 50px; }
         .btn {
             display: block; width: 85%; max-width: 400px; margin: 20px auto; padding: 25px;
             border-radius: 20px; text-decoration: none; font-size: 20px; font-weight: bold;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
         }
+        .btn:active { transform: scale(0.95); }
         .human { background: linear-gradient(45deg, #ff0055, #ff5500); color: white; }
         .general { background: linear-gradient(45deg, #0055ff, #00aaff); color: white; }
     </style>
 </head>
 <body>
-    <h2>انتخاب دوربین</h2>
-    <a href="human_cam.html" class="btn human">تشخیص آناتومی انسان 🧠<br><span style="font-size:12px; opacity:0.8">(اولویت با چهره و هویت)</span></a>
-    <a href="general_cam.html" class="btn general">عمومی (همه اشیاء) 📷<br><span style="font-size:12px; opacity:0.8">(ماشین، حیوان، کیف و...)</span></a>
+    <h2>سیستم نظارتی هوشمند</h2>
+    <a href="human_cam.html" class="btn human">تشخیص آناتومی و چهره 🧠<br><span style="font-size:12px; opacity:0.8">(کاملاً آفلاین و سریع)</span></a>
+    <a href="general_cam.html" class="btn general">تشخیص عمومی اشیاء 📷<br><span style="font-size:12px; opacity:0.8">(ماشین، کیف، حیوانات)</span></a>
 </body>
 </html>
     
