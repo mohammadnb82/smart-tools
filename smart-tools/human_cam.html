@@ -13,14 +13,9 @@
             background: rgba(0,0,0,0.6); color: white; padding: 10px 20px;
             border: 1px solid white; border-radius: 20px; text-decoration: none; font-size: 14px;
         }
-        .controls {
-            position: absolute; top: 20px; right: 20px; pointer-events: auto;
-            background: rgba(0,0,0,0.5); padding: 10px; border-radius: 10px; color: white;
-            display: flex; align-items: center; gap: 10px;
-        }
         #status-msg {
-            position: absolute; top: 80px; width: 100%; text-align: center;
-            color: yellow; font-size: 18px; text-shadow: 1px 1px 2px black;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: yellow; font-size: 20px; text-align: center; text-shadow: 2px 2px 4px #000;
         }
         #error-log {
             position: absolute; bottom: 10px; left: 10px; width: 90%; 
@@ -28,6 +23,7 @@
             padding: 5px; display: none; z-index: 20; text-align: left; direction: ltr;
         }
     </style>
+    <!-- لود کتابخانه‌ها از مسیر لوکال -->
     <script src="./assets/tf-core.js"></script>
     <script src="./assets/tf-converter.js"></script>
     <script src="./assets/tf-backend-webgl.js"></script>
@@ -38,11 +34,7 @@
     <canvas id="output"></canvas>
     <div id="ui-layer">
         <a href="index.html" class="back-btn">BACK</a>
-        <div class="controls">
-            <input type="range" id="threshold" min="0" max="100" value="50">
-            <span id="thresh-val">حساسیت: 50%</span>
-        </div>
-        <div id="status-msg">...در حال بارگذاری مدل آفلاین...</div>
+        <div id="status-msg">در حال بارگذاری مدل آفلاین...<br>(لطفا صبر کنید)</div>
         <div id="error-log"></div>
     </div>
     <script>
@@ -57,7 +49,7 @@
             console.error(err);
             statusMsg.innerText = "خطا در اجرا";
             errorLog.style.display = 'block';
-            errorLog.innerText = err;
+            errorLog.innerText = "Error: " + err;
         }
 
         async function setupCamera() {
@@ -71,16 +63,22 @@
         async function loadModel() {
             try {
                 await tf.ready();
-                // آدرس دهی دقیق به فایل لوکال
+                console.log("TF Ready.");
+                
+                // تنظیم دقیق آدرس مدل
                 const modelConfig = {
                     modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
                     modelUrl: './assets/movenet/model.json' 
                 };
+                
+                console.log("Loading model from:", modelConfig.modelUrl);
                 detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, modelConfig);
-                statusMsg.innerText = ""; 
+                
+                console.log("Model Loaded Successfully!");
+                statusMsg.style.display = 'none'; // مخفی کردن پیام لودینگ
                 detectPose();
             } catch (e) {
-                logError("Error Loading Model: " + e.message + " (Check assets/movenet folder)");
+                logError(e.message + "\nCheck if assets/movenet/model.json exists.");
             }
         }
 
@@ -94,17 +92,18 @@
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 if (poses && poses.length > 0) {
                     const keypoints = poses[0].keypoints;
-                    const threshold = document.getElementById('threshold').value / 100;
                     keypoints.forEach(kp => {
-                        if (kp.score > threshold) {
+                        if (kp.score > 0.3) {
                             ctx.beginPath();
-                            ctx.arc(kp.x, kp.y, 5, 0, 2 * Math.PI);
+                            ctx.arc(kp.x, kp.y, 6, 0, 2 * Math.PI);
                             ctx.fillStyle = '#00ff00';
                             ctx.fill();
+                            ctx.strokeStyle = '#ffffff';
+                            ctx.stroke();
                         }
                     });
                 }
-            } catch (err) {}
+            } catch (err) { console.log(err); }
             requestAnimationFrame(detectPose);
         }
 

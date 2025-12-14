@@ -1,46 +1,7 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <title>تشخیص اشیاء</title>
-    <script src="./assets/tf-core.js"></script>
-    <script src="./assets/tf-converter.js"></script>
-    <script src="./assets/tf-backend-webgl.js"></script>
-    <script src="./assets/coco-ssd.js"></script>
-    <style>body{background:black;color:white;text-align:center;} .back-btn{background:white;color:black;padding:5px;position:fixed;top:10px;left:10px;}</style>
-</head>
-<body>
-    <a href="index.html" class="back-btn">بازگشت</a>
-    <video id="webcam" autoplay playsinline width="100%"></video>
-    <canvas id="canvas" style="position:absolute;top:0;left:0;"></canvas>
-    <p id="status">در حال لود...</p>
-    <script>
-        const video = document.getElementById('webcam');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const status = document.getElementById('status');
-        let model;
-        async function run() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-            video.srcObject = stream;
-            await new Promise(r => video.onloadedmetadata = () => { video.play(); r(); });
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            model = await cocoSsd.load();
-            status.innerText = "";
-            detectFrame();
-        }
-        function detectFrame() {
-            model.detect(video).then(predictions => {
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-                predictions.forEach(prediction => {
-                    const [x, y, width, height] = prediction.bbox;
-                    ctx.strokeStyle = "#00FFFF"; ctx.strokeRect(x, y, width, height);
-                    ctx.fillStyle = "#00FFFF"; ctx.fillText(prediction.class, x, y > 10 ? y - 5 : 10);
-                });
-                requestAnimationFrame(detectFrame);
-            });
-        }
-        run();
-    </script>
-</body>
-</html>
+<head><meta charset="UTF-8"><title>General Cam</title></head>
+<body style="background:black;color:white;text-align:center;">
+    <h1>General Cam (Placeholder)</h1>
+    <a href="index.html" style="color:yellow;">بازگشت</a>
+</body></html>
