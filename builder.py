@@ -50,8 +50,8 @@ def create_dashboard():
             transition: 0.3s; display: flex; align-items: center; justify-content: space-between;
         }}
         .btn:hover {{ transform: scale(1.02); }}
-        .btn-human:hover {{ background: #334155; border-color: #ef4444; }} /* قرمز برای امنیت */
-        .btn-general:hover {{ background: #334155; border-color: #38bdf8; }} /* آبی برای عمومی */
+        .btn-human:hover {{ background: #334155; border-color: #ef4444; }} 
+        .btn-general:hover {{ background: #334155; border-color: #38bdf8; }} 
         
         .icon {{ font-size: 1.5em; }}
         .footer {{ margin-top: 50px; color: #64748b; font-size: 0.8em; }}
@@ -62,7 +62,6 @@ def create_dashboard():
     <div class="container">
         <h1>🛡️ انتخاب دوربین نظارتی</h1>
         
-        <!-- دکمه دوربین انسان -->
         <a href="{HUMAN_CAM_FILE}" class="btn btn-human">
             <div style="text-align:right">
                 <div>📷 تشخیص انسان</div>
@@ -71,7 +70,6 @@ def create_dashboard():
             <span class="icon">👤</span>
         </a>
         
-        <!-- دکمه دوربین عمومی -->
         <a href="{GENERAL_CAM_FILE}" class="btn btn-general">
             <div style="text-align:right">
                 <div>🎥 تشخیص اشیاء</div>
@@ -92,21 +90,14 @@ def create_dashboard():
     print("Dashboard generated.")
 
 def get_camera_html_content(mode):
-    """
-    تولید محتوای HTML برای دوربین
-    mode = 'human' یا 'general'
-    """
-    
     if mode == 'human':
         page_title = "دوربین امنیتی (انسان)"
-        theme_color = "#ef4444" # قرمز
-        # فقط کلاس person را فیلتر می‌کند
+        theme_color = "#ef4444"
         js_filter_logic = 'if (prediction.class === "person" && prediction.score > detectionThreshold)'
         box_color = "#FF0000"
     else:
         page_title = "دوربین عمومی (همه اشیاء)"
-        theme_color = "#38bdf8" # آبی
-        # همه کلاس‌ها را قبول می‌کند به شرط حساسیت
+        theme_color = "#38bdf8"
         js_filter_logic = 'if (prediction.score > detectionThreshold)'
         box_color = "#00FFFF"
 
@@ -122,8 +113,6 @@ def get_camera_html_content(mode):
     <style>
         * {{ box-sizing: border-box; }}
         body {{ margin: 0; background: #000; color: white; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }}
-        
-        /* Toolbar */
         .toolbar {{
             background: #111; padding: 5px 10px; display: flex; justify-content: space-between; align-items: center;
             border-bottom: 2px solid {theme_color}; height: 60px;
@@ -134,15 +123,11 @@ def get_camera_html_content(mode):
         button {{
             background: #222; color: white; border: 1px solid #444; padding: 5px 10px; border-radius: 5px; cursor: pointer;
         }}
-        
-        /* Camera Area */
         #camera-wrapper {{
             flex: 1; position: relative; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden;
         }}
         video {{ width: 100%; height: 100%; object-fit: contain; }}
         canvas {{ position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }}
-        
-        /* Best Shot Panel */
         #best-shot-panel {{
             height: 160px; background: #0a0a0a; border-top: 1px solid #333; display: flex;
             align-items: center; padding: 10px; gap: 15px;
@@ -158,7 +143,6 @@ def get_camera_html_content(mode):
             position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.8);
             color: {theme_color}; font-size: 10px; padding: 2px 4px; border-top-left-radius: 5px;
         }}
-        
         #status-overlay {{
             position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6);
             color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 11px; z-index: 10;
@@ -166,7 +150,6 @@ def get_camera_html_content(mode):
     </style>
 </head>
 <body>
-
     <div class="toolbar">
         <a href="{INDEX_FILE}" style="text-decoration: none; font-size: 20px;">🔙</a>
         <div style="font-weight: bold; color: {theme_color}; font-size: 14px;">{page_title}</div>
@@ -210,7 +193,6 @@ def get_camera_html_content(mode):
         let detectionThreshold = 0.5;
         let bestScore = 0; 
         
-        // صدا
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function beep() {{
             if (isMuted) return;
@@ -218,7 +200,7 @@ def get_camera_html_content(mode):
             const gain = audioCtx.createGain();
             osc.connect(gain);
             gain.connect(audioCtx.destination);
-            osc.frequency.value = { "600" if mode == "human" else "1200" }; // صدای متفاوت برای هر مود
+            osc.frequency.value = { "600" if mode == "human" else "1200" };
             gain.gain.value = 0.05;
             osc.start();
             setTimeout(() => osc.stop(), 100);
@@ -278,23 +260,19 @@ def get_camera_html_content(mode):
             let objectFound = false;
 
             predictions.forEach(prediction => {{
-                // منطق فیلتر بر اساس مود (تزریق شده توسط پایتون)
                 {js_filter_logic} {{
                     
                     objectFound = true;
                     const [x, y, width, height] = prediction.bbox;
                     
-                    // رسم کادر
                     ctx.strokeStyle = "{box_color}";
                     ctx.lineWidth = 2;
                     ctx.strokeRect(x, y, width, height);
                     
-                    // نوشتن نام شیء بالای کادر
                     ctx.fillStyle = "{box_color}";
                     ctx.font = "16px Arial";
                     ctx.fillText(prediction.class + " (" + Math.round(prediction.score*100) + "%)", x, y > 10 ? y - 5 : 10);
 
-                    // محاسبه امتیاز برای Best Shot
                     const frameScore = prediction.score * (width * height);
 
                     if (frameScore > bestScore) {{
@@ -305,7 +283,6 @@ def get_camera_html_content(mode):
                 }}
             }});
             
-            // کاهش امتیاز تدریجی برای ریست شدن
             if (!objectFound && bestScore > 0) {{
                 bestScore -= 500; 
                 if(bestScore < 0) bestScore = 0;
@@ -341,14 +318,11 @@ def get_camera_html_content(mode):
 
 def create_camera_files():
     """تولید دو فایل دوربین جداگانه"""
-    
-    # 1. ساخت دوربین انسان
     print("Generating Human Camera...")
     human_html = get_camera_html_content("human")
     with open(HUMAN_CAM_FILE, "w", encoding="utf-8") as f:
         f.write(human_html)
 
-    # 2. ساخت دوربین عمومی
     print("Generating General Camera...")
     general_html = get_camera_html_content("general")
     with open(GENERAL_CAM_FILE, "w", encoding="utf-8") as f:
