@@ -39,11 +39,12 @@
         }
         .score-high { color: #0f0; font-weight: bold; }
     </style>
-    <!-- Import TensorFlow.js and Pose Detection -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    
+    <!-- استفاده از کتابخانه‌های دانلود شده در پوشه assets -->
+    <script src="assets/tf-core.js"></script>
+    <script src="assets/tf-converter.js"></script>
+    <script src="assets/tf-backend-webgl.js"></script>
+    <script src="assets/pose-detection.js"></script>
 </head>
 <body>
     <div id="header">
@@ -77,9 +78,9 @@
         let detector = null;
         let isMuted = false;
         let sensitivity = 0.5;
-        let subjects = []; // { id, centerX, bestTotalScore, lastSeen }
+        let subjects = []; 
 
-        // Audio
+        // Audio Context
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function beep() {
             if(isMuted) return;
@@ -102,23 +103,16 @@
             return new Promise(resolve => { video.onloadedmetadata = () => { video.play(); resolve(); }; });
         }
 
-        // --- منطق هوشمند آناتومی (با اولویت ۱۰۰ برابری چهره) ---
         function analyzePose(keypoints) {
             let faceScore = 0;
             let bodyScore = 0;
             
-            // شاخص‌های MoveNet:
             // 0:nose, 1:left_eye, 2:right_eye, 3:left_ear, 4:right_ear
-            // 5-6:shoulders, 7-8:elbows, 9-10:wrists
-            // 11-12:hips, 13-14:knees, 15-16:ankles
-            
             keypoints.forEach((kp, index) => {
                 if (kp.score > sensitivity) {
                     if (index <= 4) {
-                        // *** تغییر مهم: اجزای صورت ۱۰۰ امتیاز ***
-                        faceScore += 100;
+                        faceScore += 100; // امتیاز بالا برای چهره
                     } else {
-                        // اجزای بدن: ۱ امتیاز
                         bodyScore += 1;
                     }
                 }
@@ -126,7 +120,6 @@
             
             const totalScore = faceScore + bodyScore;
             
-            // مرکز ثقل بدن (برای ردیابی فرد) - میانگین x همه نقاط دیده شده
             let sumX = 0, count = 0;
             keypoints.forEach(kp => { if(kp.score > sensitivity) { sumX += kp.x; count++; } });
             const centerX = count > 0 ? sumX / count : 0;
@@ -135,12 +128,10 @@
         }
 
         function updateGallery(poseData, videoEl) {
-            // نویز را نادیده بگیر (حداقل یک عضو بدن یا صورت دیده شود)
             if (poseData.totalScore < 1) return; 
 
-            // ردیابی فرد (آیا این فرد قبلاً بوده؟)
             let matchIndex = -1;
-            let minDist = 100; // پیکسل فاصله مجاز برای تشخیص همان فرد
+            let minDist = 100; 
 
             for(let i=0; i<subjects.length; i++) {
                 if (Math.abs(subjects[i].centerX - poseData.centerX) < minDist) {
@@ -150,18 +141,15 @@
             }
 
             if (matchIndex !== -1) {
-                // فرد تکراری است
                 const sub = subjects[matchIndex];
-                sub.centerX = poseData.centerX; // آپدیت مکان
+                sub.centerX = poseData.centerX;
                 sub.lastSeen = Date.now();
 
-                // شرط جایگزینی عکس: اولویت مطلق با امتیاز کل (که الان تحت تاثیر شدید صورت است)
                 if (poseData.totalScore > sub.bestTotalScore) {
                     sub.bestTotalScore = poseData.totalScore;
                     captureImage(sub.id, poseData, "UPDATED");
                 }
             } else {
-                // فرد جدید
                 const newId = 'person-' + Date.now();
                 subjects.push({
                     id: newId,
@@ -186,7 +174,6 @@
             const card = document.getElementById(id);
             if(!card) return;
             
-            // برش هوشمند: پیدا کردن Min/Max مختصات برای کادر
             let minX=video.videoWidth, minY=video.videoHeight, maxX=0, maxY=0;
             poseData.keypoints.forEach(kp => {
                 if(kp.score > 0.3) {
@@ -196,7 +183,6 @@
                     if(kp.y > maxY) maxY = kp.y;
                 }
             });
-            // اضافه کردن حاشیه
             const pad = 30;
             minX = Math.max(0, minX - pad);
             minY = Math.max(0, minY - pad);
@@ -209,7 +195,6 @@
             
             card.querySelector('img').src = tCanvas.toDataURL('image/jpeg');
             
-            // متن توضیحات بر اساس امتیاز
             let desc = "";
             let scoreClass = "";
             
@@ -221,9 +206,7 @@
                 scoreClass = "";
             }
             
-            // نمایش تعداد اجزای صورت شناسایی شده
             const facePartsCount = poseData.faceScore / 100;
-            
             card.querySelector('.card-meta').innerHTML = `<span class="${scoreClass}">${desc}</span><br>Face Parts: ${facePartsCount}`;
             
             card.style.borderColor = '#fff';
@@ -255,12 +238,11 @@
                 if(kp.score > sensitivity) {
                    ctx.beginPath();
                    ctx.arc(kp.x, kp.y, 4, 0, 2*Math.PI);
-                   // رنگ صورت سبز، رنگ بدن قرمز
                    ctx.fillStyle = index <= 4 ? '#00ff00' : '#ff0055';
                    ctx.fill();
                 }
             });
-            // رسم خطوط
+            
             const adjacentPairs = poseDetection.util.getAdjacentPairs(poseDetection.SupportedModels.MoveNet);
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 1;

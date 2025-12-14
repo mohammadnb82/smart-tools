@@ -1,123 +1,25 @@
+
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FFmpeg + AI Processor</title>
-    
-    <!-- [حیاتی] این اسکریپت محیط امنیتی لازم برای FFmpeg را در گیت‌هاب ایجاد می‌کند -->
-    <script src="assets/coi-serviceworker.js"></script>
-
+    <title>پنل امنیتی</title>
     <style>
-        body { font-family: sans-serif; background: #222; color: #fff; padding: 20px; text-align: center; }
-        .box { background: #333; padding: 20px; border-radius: 10px; max-width: 600px; margin: 0 auto; }
-        button { padding: 10px 20px; background: #0d6efd; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
-        button:disabled { background: #555; cursor: not-allowed; }
-        #log { background: #000; color: #0f0; height: 200px; overflow-y: auto; text-align: left; padding: 10px; margin-top: 10px; font-family: monospace; direction: ltr; }
-        video { width: 100%; margin-top: 10px; }
+        body { background: #111; color: white; font-family: sans-serif; text-align: center; padding-top: 50px; }
+        .btn {
+            display: block; width: 85%; max-width: 400px; margin: 20px auto; padding: 25px;
+            border-radius: 20px; text-decoration: none; font-size: 20px; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .human { background: linear-gradient(45deg, #ff0055, #ff5500); color: white; }
+        .general { background: linear-gradient(45deg, #0055ff, #00aaff); color: white; }
     </style>
-    
-    <!-- بارگذاری FFmpeg -->
-    <script src="assets/ffmpeg-lib.js"></script>
-    
-    <!-- بارگذاری TensorFlow (آماده برای استفاده‌های بعدی) -->
-    <script src="assets/tf.min.js"></script>
-    <script src="assets/pose-detection.min.js"></script>
-    <script src="assets/coco-ssd.min.js"></script>
 </head>
 <body>
-    <div class="box">
-        <h2>پردازشگر ویدیو (GitHub Pages Compatible)</h2>
-        <p id="status" style="color: yellow;">در حال آماده‌سازی...</p>
-        
-        <input type="file" id="uploader" accept="video/*" disabled>
-        <br>
-        <button id="btn-run" disabled>تست پردازش (5 ثانیه برش)</button>
-        
-        <div id="log"></div>
-        <video id="output-video" controls></video>
-    </div>
-
-    <script>
-        const { createFFmpeg, fetchFile } = FFmpeg;
-        let ffmpeg = null;
-        const logArea = document.getElementById('log');
-        const statusEl = document.getElementById('status');
-        const uploader = document.getElementById('uploader');
-        const btnRun = document.getElementById('btn-run');
-
-        function log(msg) {
-            logArea.innerHTML += `> ${msg}<br>`;
-            logArea.scrollTop = logArea.scrollHeight;
-        }
-
-        async function initApp() {
-            try {
-                // بررسی وضعیت امنیتی برای اطمینان
-                if (window.crossOriginIsolated) {
-                    log("وضعیت امنیتی: فعال (Secure Context) ✅");
-                } else {
-                    log("⚠️ هشدار: هدرهای امنیتی فعال نیستند. اسکریپت COI تلاش می‌کند صفحه را ریلود کند...");
-                }
-
-                statusEl.innerText = "در حال لود هسته FFmpeg...";
-                
-                // ایجاد نمونه FFmpeg با اشاره صریح به فایل لوکال
-                ffmpeg = createFFmpeg({
-                    log: true,
-                    corePath: 'assets/ffmpeg-core.js', // نکته کلیدی برای اجرای آفلاین/لوکال
-                    logger: ({ message }) => log(`[FFmpeg] ${message}`)
-                });
-
-                await ffmpeg.load();
-                
-                statusEl.innerText = "آماده به کار";
-                statusEl.style.color = "#0f0";
-                uploader.disabled = false;
-                log("FFmpeg با موفقیت بارگذاری شد.");
-
-            } catch (error) {
-                statusEl.innerText = "خطا در بارگذاری";
-                statusEl.style.color = "red";
-                log(`[ERROR] ${error.message}`);
-            }
-        }
-
-        uploader.addEventListener('change', (e) => {
-            if(e.target.files[0]) {
-                uploader.file = e.target.files[0];
-                btnRun.disabled = false;
-                log(`فایل انتخاب شد: ${uploader.file.name}`);
-            }
-        });
-
-        btnRun.addEventListener('click', async () => {
-            if(!ffmpeg) return;
-            btnRun.disabled = true;
-            statusEl.innerText = "در حال پردازش...";
-            
-            try {
-                // نوشتن فایل در مموری
-                ffmpeg.FS('writeFile', 'input.mp4', await fetchFile(uploader.file));
-                
-                // اجرای دستور (مثال: کات کردن 5 ثانیه اول بدون انکود مجدد)
-                await ffmpeg.run('-i', 'input.mp4', '-t', '5', '-c', 'copy', 'out.mp4');
-                
-                // خواندن خروجی
-                const data = ffmpeg.FS('readFile', 'out.mp4');
-                const videoUrl = URL.createObjectURL(new Blob([data.buffer], {type: 'video/mp4'}));
-                document.getElementById('output-video').src = videoUrl;
-                
-                log("✅ پردازش تمام شد.");
-                statusEl.innerText = "پایان";
-            } catch (e) {
-                log(`❌ خطا: ${e.message}`);
-            } finally {
-                btnRun.disabled = false;
-            }
-        });
-
-        initApp();
-    </script>
+    <h2>انتخاب دوربین</h2>
+    <a href="human_cam.html" class="btn human">تشخیص آناتومی انسان 🧠<br><span style="font-size:12px; opacity:0.8">(اولویت با چهره و هویت)</span></a>
+    <a href="general_cam.html" class="btn general">عمومی (همه اشیاء) 📷<br><span style="font-size:12px; opacity:0.8">(ماشین، حیوان، کیف و...)</span></a>
 </body>
 </html>
+    
