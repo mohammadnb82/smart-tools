@@ -3,12 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>سیستم حفاظتی حرفه‌ای</title>
+<title>سیستم فوق پیشرفته امنیتی</title>
+
+<!-- بارگذاری هسته هوش مصنوعی تنسورفلو -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
 
 <style>
 body {
     margin: 0;
-    background: #0f0f12;
+    background: #050505;
     color: #00ffcc;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     text-align: center;
@@ -17,144 +21,149 @@ body {
 
 header {
     padding: 20px;
-    background: linear-gradient(180deg, #000 0%, #1a1a1a 100%);
+    background: linear-gradient(180deg, #000 0%, #111 100%);
     border-bottom: 1px solid #00ffcc;
-    margin-bottom: 20px;
-    box-shadow: 0 0 20px rgba(0, 255, 204, 0.1);
+    box-shadow: 0 0 25px rgba(0, 255, 204, 0.2);
+    margin-bottom: 25px;
 }
 
-h2 { margin: 0; font-size: 22px; }
+h2 { margin: 0; font-size: 20px; letter-spacing: 1px; }
 
 .container {
     display: flex;
     flex-direction: column;
     gap: 25px;
-    padding: 15px;
-    max-width: 600px;
+    padding: 10px;
+    max-width: 700px;
     margin: 0 auto;
 }
 
+/* استایل پنل‌ها */
 .panel {
-    border: 1px solid #333;
-    background: #18181b;
-    padding: 20px;
+    border: 1px solid #222;
+    background: #111;
+    padding: 15px;
     border-radius: 12px;
     position: relative;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
 
 .panel.active {
     border-color: #00ffcc;
-    box-shadow: 0 0 20px rgba(0, 255, 204, 0.15);
-    background: #1e1e24;
+    box-shadow: 0 0 15px rgba(0, 255, 204, 0.1);
+    background: #161616;
 }
 
 .panel-title {
     font-weight: bold;
-    font-size: 18px;
+    font-size: 16px;
     display: block;
     color: #fff;
     margin-bottom: 5px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 8px;
 }
 
 .panel-desc {
-    font-size: 13px;
+    font-size: 12px;
     color: #888;
     margin-bottom: 15px;
 }
 
-/* اسلایدر تنظیم حساسیت */
-.slider-container {
-    margin: 15px 0;
-    text-align: center;
-}
-input[type=range] {
-    width: 100%;
-    accent-color: #00ffcc;
-    cursor: pointer;
-}
-.range-labels {
+/* استایل مخصوص پنل دو تکه (AI) */
+.split-view {
     display: flex;
+    gap: 10px;
     justify-content: space-between;
-    font-size: 11px;
-    color: #666;
-    margin-top: 5px;
+    align-items: flex-start;
 }
 
-/* ویدیو مخفی */
+.view-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.view-label {
+    font-size: 11px;
+    color: #aaa;
+    margin-bottom: 5px;
+}
+
+.captured-image {
+    width: 100%;
+    height: 150px; /* ارتفاع ثابت برای زیبایی */
+    object-fit: contain;
+    background-color: #000;
+    border: 1px dashed #444;
+    border-radius: 6px;
+}
+.captured-image.has-photo {
+    border: 2px solid #ff3333;
+    box-shadow: 0 0 10px #ff3333;
+}
+
+/* اسلایدر */
+.slider-container { margin: 15px 0; }
+input[type=range] { width: 100%; accent-color: #00ffcc; cursor: pointer; }
+
+/* ویدیو و کانواس */
 video {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-    z-index: -1;
-    pointer-events: none;
+    top: 0; left: 0; width: 1px; height: 1px; opacity: 0; z-index: -1;
 }
 
 canvas {
     width: 100%;
     height: auto;
-    border: 2px solid #333;
+    border: 1px solid #333;
     background: #000;
-    border-radius: 8px;
-    display: block;
+    border-radius: 6px;
 }
 
+/* دکمه‌ها */
 .btn-row {
-    margin-top: 20px;
+    margin-top: 15px;
     display: flex;
-    justify-content: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 button {
     border: none;
-    padding: 14px 0;
-    font-size: 15px;
-    border-radius: 8px;
+    padding: 12px 0;
+    font-size: 14px;
+    border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
     flex: 1; 
-    transition: transform 0.1s;
+    color: white;
 }
-
-button:active { transform: scale(0.98); }
-
-.btn-start { background: linear-gradient(45deg, #008866, #00cc99); color: #fff; box-shadow: 0 4px 10px rgba(0, 204, 153, 0.3); }
-.btn-stop { background: linear-gradient(45deg, #882222, #cc3333); color: #fff; box-shadow: 0 4px 10px rgba(204, 51, 51, 0.3); }
+.btn-start { background: #007755; }
+.btn-stop { background: #772222; }
 
 .status {
-    margin-top: 15px;
-    font-size: 14px;
-    color: #666;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #555;
     font-weight: bold;
 }
+.alert { color: #ff3333; animation: blink 0.5s infinite; }
+@keyframes blink { 50% { opacity: 0.5; } }
 
 .debug-info {
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    color: #ffcc00;
-    background: rgba(0,0,0,0.5);
-    padding: 4px 8px;
-    border-radius: 4px;
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    direction: ltr;
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(0,0,0,0.7); color: gold;
+    padding: 2px 5px; font-size: 10px; border-radius: 4px;
+    font-family: monospace; direction: ltr;
 }
 
-.alert {
-    color: #ff3333;
-    animation: pulse 0.5s infinite;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.02); }
-    100% { opacity: 1; transform: scale(1); }
+/* لودینگ مدل */
+#model-loading {
+    display: none;
+    color: cyan;
+    font-size: 12px;
+    margin-top: 5px;
 }
 
 </style>
@@ -163,71 +172,88 @@ button:active { transform: scale(0.98); }
 <body>
 
 <header>
-    <h2>🛡️ سیستم حفاظتی (نسخه ۳)</h2>
-    <div style="font-size:11px; color:#aaa; margin-top:5px;">با قابلیت تنظیم دستی</div>
+    <h2>🛡️ سامانه نظارت هوشمند</h2>
+    <div style="font-size:11px; color:#666;">تشخیص حرکت + تشخیص انسان (AI)</div>
 </header>
 
 <video id="video" autoplay playsinline muted></video>
 
 <div class="container">
 
-    <!-- پنل ۱: حساس -->
-    <div class="panel" id="panel-sensitive">
-        <span class="panel-title">👁️ حساسیت حداکثری</span>
-        <p class="panel-desc">واکنش به کوچکترین حرکات (حشرات، برگ درخت).</p>
+    <!-- ================= پنل جدید: هوش مصنوعی انسان ================= -->
+    <div class="panel" id="panel-human">
+        <span class="panel-title" style="color:#ff3333;">🤖 شکارچی انسان (AI Detect)</span>
+        <p class="panel-desc">فقط روی انسان آژیر می‌کشد. عکس واضح چهره را جدا می‌کند.</p>
         
+        <div id="model-loading">⏳ در حال بارگذاری مغز هوش مصنوعی...</div>
+
+        <div class="split-view">
+            <!-- سمت راست: تصویر واضح -->
+            <div class="view-box">
+                <span class="view-label">📸 بهترین شکار (چهره/بدن)</span>
+                <img id="best-shot-img" class="captured-image" src="" alt="هنوز شناسایی نشده">
+                <div style="font-size:10px; color:gold; margin-top:2px;" id="confidence-score">W: 0%</div>
+            </div>
+
+            <!-- سمت چپ: دوربین زنده -->
+            <div class="view-box">
+                <span class="view-label">👁️ پردازش زنده</span>
+                <canvas id="canvas-ai"></canvas>
+            </div>
+        </div>
+
+        <div class="status" id="status-ai">خاموش</div>
+
+        <div class="btn-row">
+            <button class="btn-start" onclick="startHumanDetection()">شروع هوشمند</button>
+            <button class="btn-stop" onclick="stopSystem()">توقف</button>
+        </div>
+    </div>
+    <!-- ============================================================ -->
+
+
+    <!-- پنل ۱: حساسیت بالا -->
+    <div class="panel" id="panel-sensitive">
+        <span class="panel-title">👁️ حساسیت حداکثری (پیکسل)</span>
         <div style="position:relative;">
             <canvas id="canvas1"></canvas>
-            <div class="debug-info" id="debug1">Score: 0</div>
+            <div class="debug-info" id="debug1">0</div>
         </div>
-        <div class="status" id="status1">غیرفعال</div>
-        
+        <div class="status" id="status1">خاموش</div>
         <div class="btn-row">
-            <button class="btn-start" onclick="startSystem('sensitive')">فعال‌سازی</button>
+            <button class="btn-start" onclick="startMotion('sensitive')">فعال</button>
             <button class="btn-stop" onclick="stopSystem()">توقف</button>
         </div>
     </div>
 
-    <!-- پنل ۲: گربه -->
+    <!-- پنل ۲: گربه/حیوانات -->
     <div class="panel" id="panel-cat">
-        <span class="panel-title">🐱 حالت حیوانات خانگی (گربه)</span>
-        <p class="panel-desc">اشیاء کوچکتر از گربه (در فاصله دور) را نادیده می‌گیرد.</p>
-        
+        <span class="panel-title">🐱 حالت حیوانات (متوسط)</span>
         <div style="position:relative;">
             <canvas id="canvas2"></canvas>
-            <div class="debug-info" id="debug2">Score: 0</div>
+            <div class="debug-info" id="debug2">0</div>
         </div>
-        <div class="status" id="status2">غیرفعال</div>
-        
+        <div class="status" id="status2">خاموش</div>
         <div class="btn-row">
-            <button class="btn-start" onclick="startSystem('cat')">فعال‌سازی</button>
+            <button class="btn-start" onclick="startMotion('cat')">فعال</button>
             <button class="btn-stop" onclick="stopSystem()">توقف</button>
         </div>
     </div>
 
     <!-- پنل ۳: دستی -->
     <div class="panel" id="panel-custom">
-        <span class="panel-title">🎛️ تنظیم دستی (پیشرفته)</span>
-        <p class="panel-desc">میزان حساسیت را خودتان با اسلایدر زیر تنظیم کنید.</p>
-        
-        <!-- اسلایدر تنظیم -->
+        <span class="panel-title">🎛️ تنظیم دستی حساسیت</span>
         <div class="slider-container">
-            <input type="range" id="sensitivitySlider" min="100" max="15000" step="100" value="3000" oninput="updateSliderDisplay(this.value)">
-            <div class="range-labels">
-                <span>خیلی حساس (حرکت ریز)</span>
-                <span>سنگین (انسان/ماشین)</span>
-            </div>
-            <div style="margin-top:5px; color:#00ffcc;">حد آستانه فعلی: <span id="sliderValueDisplay">3000</span></div>
+            <input type="range" id="sensitivitySlider" min="100" max="15000" step="100" value="3000" oninput="document.getElementById('sliderVal').innerText=this.value">
+            <div style="font-size:10px; color:#fff;">آستانه: <span id="sliderVal">3000</span></div>
         </div>
-
         <div style="position:relative;">
             <canvas id="canvas3"></canvas>
-            <div class="debug-info" id="debug3">Score: 0</div>
+            <div class="debug-info" id="debug3">0</div>
         </div>
-        <div class="status" id="status3">غیرفعال</div>
-        
+        <div class="status" id="status3">خاموش</div>
         <div class="btn-row">
-            <button class="btn-start" onclick="startSystem('custom')">شروع تست</button>
+            <button class="btn-start" onclick="startMotion('custom')">فعال</button>
             <button class="btn-stop" onclick="stopSystem()">توقف</button>
         </div>
     </div>
@@ -235,79 +261,57 @@ button:active { transform: scale(0.98); }
 </div>
 
 <script>
+// --- متغیرهای سراسری ---
 const video = document.getElementById("video");
 let currentStream = null;
 let currentMode = null; 
 let audioCtx = null;
 let oscillator = null;
-let lastFrame = null;
-let analysisLoop = null;
+let requestLoop = null; // برای کنسل کردن لوپ
 
-// تنظیمات
+// متغیرهای بخش حرکتی (قدیمی)
+let lastFrame = null;
+
+// متغیرهای بخش هوش مصنوعی (جدید)
+let cocoModel = null;
+let bestCaptureScore = 0; // برای ذخیره امتیاز بهترین عکس
+
+// --- تنظیمات حرکتی ---
 const CONFIG = {
-    sensitive: {
-        threshold: 600,       // عدد کم = حساسیت بالا (برای حشرات/برگ)
-        pixelSkip: 4,         
-        soundFreq: 1200,     // صدای زیر (بیپ بیپ سریع)
-        soundType: 'sine',
-        canvasId: 'canvas1',
-        panelId: 'panel-sensitive',
-        statusId: 'status1',
-        debugId: 'debug1',
-        resW: 64, resH: 48
-    },
-    cat: {
-        threshold: 2200,      // تنظیم شده برای گربه (نه خیلی حساس، نه خیلی سنگین)
-        pixelSkip: 4,         
-        soundFreq: 600,       // صدای متوسط
-        soundType: 'square',
-        canvasId: 'canvas2',
-        panelId: 'panel-cat',
-        statusId: 'status2',
-        debugId: 'debug2',
-        resW: 64, resH: 48
-    },
-    custom: {
-        threshold: 3000,      // مقدار اولیه (از اسلایدر خوانده می‌شود)
-        pixelSkip: 4,
-        soundFreq: 300,       // صدای بم هشدار
-        soundType: 'sawtooth',
-        canvasId: 'canvas3',
-        panelId: 'panel-custom',
-        statusId: 'status3',
-        debugId: 'debug3',
-        resW: 64, resH: 48
-    }
+    sensitive: { thresh: 600, skip: 4, freq: 1200, type: 'sine', cvs: 'canvas1', pnl: 'panel-sensitive', sts: 'status1', dbg: 'debug1', w: 64, h: 48 },
+    cat:       { thresh: 2200, skip: 4, freq: 600, type: 'square', cvs: 'canvas2', pnl: 'panel-cat', sts: 'status2', dbg: 'debug2', w: 64, h: 48 },
+    custom:    { thresh: 3000, skip: 4, freq: 300, type: 'sawtooth', cvs: 'canvas3', pnl: 'panel-custom', sts: 'status3', dbg: 'debug3', w: 64, h: 48 }
 };
 
-function updateSliderDisplay(val) {
-    document.getElementById('sliderValueDisplay').innerText = val;
-    // اگر در حال اجرای حالت کاستوم هستیم، مقدار را ریل‌تایم آپدیت کن
-    if(currentMode === 'custom') {
-        CONFIG.custom.threshold = parseInt(val);
-    }
-}
-
-// --- توابع صدا ---
-function startAlarm(type) {
+// --- صدا (آژیر) ---
+function startAlarm(isHuman) {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (oscillator) return; 
 
     oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
     
-    const settings = CONFIG[type];
-    oscillator.type = settings.soundType;
-    oscillator.frequency.value = settings.soundFreq;
-    
-    // مدولاسیون صدا برای ترسناک‌تر شدن آلارم
-    if (type === 'cat' || type === 'custom') {
-        oscillator.frequency.setValueAtTime(settings.soundFreq, audioCtx.currentTime);
-        oscillator.frequency.linearRampToValueAtTime(settings.soundFreq - 100, audioCtx.currentTime + 0.1);
+    if (isHuman) {
+        // صدای مخصوص انسان: بم و ممتد و ترسناک
+        oscillator.type = 'sawtooth';
+        oscillator.frequency.value = 100; 
+        // افکت ویبره
+        const lfo = audioCtx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 10;
+        const lfoGain = audioCtx.createGain();
+        lfoGain.gain.value = 500;
+        lfo.connect(lfoGain);
+        lfoGain.connect(oscillator.frequency);
+        lfo.start();
+    } else {
+        // صدای معمولی برای حالت‌های دیگر
+        const set = CONFIG[currentMode];
+        oscillator.type = set ? set.type : 'square';
+        oscillator.frequency.value = set ? set.freq : 500;
     }
-
-    gainNode.gain.value = 0.2; 
     
+    gainNode.gain.value = 0.2;
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
     oscillator.start();
@@ -315,157 +319,226 @@ function startAlarm(type) {
 
 function stopAlarm() {
     if (oscillator) {
-        try {
-            oscillator.stop();
-            oscillator.disconnect();
-        } catch(e) {}
+        try { oscillator.stop(); oscillator.disconnect(); } catch(e){}
         oscillator = null;
     }
 }
 
-// --- مدیریت سیستم ---
-async function startSystem(mode) {
-    if (currentMode) stopSystem();
-
-    currentMode = mode;
-    const settings = CONFIG[mode];
-    
-    // خواندن مقدار اسلایدر اگر حالت دستی باشد
-    if (mode === 'custom') {
-        const sliderVal = document.getElementById('sensitivitySlider').value;
-        settings.threshold = parseInt(sliderVal);
-    }
-
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    document.getElementById(settings.panelId).classList.add('active');
-    updateStatus("...در حال کالیبراسیون دوربین...", false);
-
-    try {
-        if (!currentStream) {
-            currentStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "environment", width: 640, height: 480 },
-                audio: false
-            });
-            video.srcObject = currentStream;
-            await new Promise(r => video.onloadedmetadata = r);
-            video.play();
-        }
-
-        lastFrame = null;
-        updateStatus("🟢 فعال - در حال نگهبانی", false);
-        detectMotion();
-
-    } catch (err) {
-        console.error(err);
-        updateStatus("❌ خطا: دسترسی به دوربین ممکن نیست", false);
-        currentMode = null;
+// --- مدیریت دوربین ---
+async function initCamera() {
+    if (!currentStream) {
+        currentStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment", width: {ideal: 640}, height: {ideal: 480} },
+            audio: false
+        });
+        video.srcObject = currentStream;
+        await new Promise(r => video.onloadedmetadata = r);
+        video.play();
     }
 }
 
 function stopSystem() {
-    if (!currentMode) return;
-    
     stopAlarm();
-    
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    updateStatus("غیرفعال", false);
-    
-    const settings = CONFIG[currentMode];
-    const canvas = document.getElementById(settings.canvasId);
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // ریست متن
-    document.getElementById(settings.debugId).innerText = "Score: 0";
-
     currentMode = null;
-    cancelAnimationFrame(analysisLoop);
+    if (requestLoop) cancelAnimationFrame(requestLoop);
+    
+    // پاک کردن وضعیت‌ها
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.status').forEach(s => { s.innerText = "خاموش"; s.className = "status"; });
+    
+    // پاک کردن کانواس‌ها
+    document.querySelectorAll('canvas').forEach(c => {
+        const ctx = c.getContext('2d');
+        ctx.clearRect(0,0,c.width,c.height);
+    });
 }
 
-function updateStatus(text, isAlert) {
-    if (!currentMode) return;
-    const el = document.getElementById(CONFIG[currentMode].statusId);
-    el.textContent = text;
-    el.className = isAlert ? "status alert" : "status";
+function activatePanel(id, statusId, msg) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById(statusId).innerText = msg;
 }
 
-// --- هسته پردازش تصویر ---
-function detectMotion() {
-    if (!currentMode) return;
-
-    analysisLoop = requestAnimationFrame(detectMotion);
-
-    if (video.readyState !== 4 || video.videoWidth === 0) return;
-
-    const settings = CONFIG[currentMode];
-    const canvas = document.getElementById(settings.canvasId);
-    const ctx = canvas.getContext("2d");
-
-    // تنظیم سایز کانواس نمایشی
-    if (canvas.width !== video.videoWidth) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-    }
-
-    // 1. رسم تصویر زنده
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    // 2. ساخت تصویر کوچک برای آنالیز
-    const w = settings.resW;
-    const h = settings.resH;
+// ======================================================
+// 1. منطق تشخیص حرکت (Motion Detection - روش قدیمی)
+// ======================================================
+async function startMotion(mode) {
+    stopSystem();
+    currentMode = mode;
+    await initCamera();
+    activatePanel(CONFIG[mode].pnl, CONFIG[mode].sts, "🟢 فعال - آنالیز پیکسلی");
+    lastFrame = null;
     
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = w;
-    tempCanvas.height = h;
-    const tctx = tempCanvas.getContext('2d');
-    tctx.drawImage(video, 0, 0, w, h);
-    
-    const frame = tctx.getImageData(0, 0, w, h);
+    // آپدیت ترشولد کاستوم
+    if (mode === 'custom') CONFIG.custom.thresh = parseInt(document.getElementById('sensitivitySlider').value);
 
-    // 3. مقایسه با فریم قبلی
+    processMotionFrame();
+}
+
+function processMotionFrame() {
+    if (!currentMode || ['sensitive','cat','custom'].indexOf(currentMode) === -1) return;
+    requestLoop = requestAnimationFrame(processMotionFrame);
+
+    const set = CONFIG[currentMode];
+    const cvs = document.getElementById(set.cvs);
+    const ctx = cvs.getContext('2d');
+
+    if (cvs.width !== video.videoWidth) { cvs.width = video.videoWidth; cvs.height = video.videoHeight; }
+    
+    ctx.drawImage(video, 0, 0, cvs.width, cvs.height);
+
+    // کوچک سازی برای پردازش
+    const tmpCvs = document.createElement('canvas');
+    tmpCvs.width = set.w; tmpCvs.height = set.h;
+    const tctx = tmpCvs.getContext('2d');
+    tctx.drawImage(video, 0, 0, set.w, set.h);
+    const frame = tctx.getImageData(0,0,set.w,set.h);
+
     if (lastFrame) {
         let score = 0;
-        const data = frame.data;
-        const lastData = lastFrame.data;
-        const skip = settings.pixelSkip;
-
-        for (let i = 0; i < data.length; i += 4 * skip) {
-            // فقط کانال سبز را مقایسه میکنیم (بهینه)
-            const diff = Math.abs(data[i+1] - lastData[i+1]); 
-            
-            // فیلتر نویز: تغییرات پیکسل زیر 20 را نادیده بگیر
-            if (diff > 20) { 
-                score += diff;
-            }
+        const d = frame.data; const ld = lastFrame.data;
+        for (let i=0; i<d.length; i+=4*set.skip) {
+            if (Math.abs(d[i+1]-ld[i+1]) > 20) score += Math.abs(d[i+1]-ld[i+1]);
         }
 
-        // نمایش امتیاز زنده
-        const debugEl = document.getElementById(settings.debugId);
-        if (debugEl) {
-            debugEl.innerText = `Score: ${score} / Limit: ${settings.threshold}`;
-            debugEl.style.color = score > settings.threshold ? "#ff3333" : "#ffcc00";
-        }
+        const debugEl = document.getElementById(set.dbg);
+        if(debugEl) debugEl.innerText = score;
 
-        // تصمیم‌گیری آژیر
-        if (score > settings.threshold) {
-            updateStatus("🚨 ورود غیرمجاز!", true);
-            startAlarm(currentMode);
-
-            // افکت بصری قرمز
-            ctx.strokeStyle = "red";
-            ctx.lineWidth = 5;
-            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-            
-            ctx.fillStyle = "rgba(255, 0, 0, 0.4)";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (score > set.thresh) {
+            document.getElementById(set.sts).innerText = "🚨 حرکت!";
+            document.getElementById(set.sts).classList.add('alert');
+            startAlarm(false);
+            ctx.fillStyle = "rgba(255,0,0,0.3)"; ctx.fillRect(0,0,cvs.width,cvs.height);
         } else {
-            updateStatus("🟢 وضعیت سفید", false);
+            document.getElementById(set.sts).innerText = "🟢 امن";
+            document.getElementById(set.sts).classList.remove('alert');
             stopAlarm();
         }
     }
-
     lastFrame = frame;
 }
+
+// ======================================================
+// 2. منطق تشخیص انسان (AI Human Detection - جدید)
+// ======================================================
+async function startHumanDetection() {
+    stopSystem();
+    currentMode = 'human';
+    activatePanel('panel-human', 'status-ai', "⏳ راه اندازی هوش مصنوعی...");
+    
+    // نمایش لودینگ
+    const loadingEl = document.getElementById('model-loading');
+    loadingEl.style.display = 'block';
+
+    try {
+        await initCamera();
+        
+        // بارگذاری مدل فقط اگر قبلاً لود نشده باشد
+        if (!cocoModel) {
+            // مدل لایت برای سرعت بیشتر روی موبایل
+            cocoModel = await cocoSsd.load({ base: 'lite_mobilenet_v2' });
+        }
+        
+        loadingEl.style.display = 'none';
+        activatePanel('panel-human', 'status-ai', "🟢 رادار انسان فعال شد");
+        
+        // ریست کردن بهترین عکس قبلی
+        bestCaptureScore = 0;
+        document.getElementById('best-shot-img').src = "";
+        document.getElementById('best-shot-img').classList.remove('has-photo');
+        document.getElementById('confidence-score').innerText = "در انتظار...";
+
+        processHumanFrame();
+
+    } catch (e) {
+        console.error(e);
+        document.getElementById('status-ai').innerText = "❌ خطا در بارگذاری هوش مصنوعی";
+        loadingEl.style.display = 'none';
+    }
+}
+
+async function processHumanFrame() {
+    if (currentMode !== 'human') return;
+    
+    // پردازش فریم بعدی
+    requestLoop = requestAnimationFrame(processHumanFrame);
+
+    const cvs = document.getElementById('canvas-ai');
+    const ctx = cvs.getContext('2d');
+    
+    if (cvs.width !== video.videoWidth) { cvs.width = video.videoWidth; cvs.height = video.videoHeight; }
+    
+    // رسم تصویر خام
+    ctx.drawImage(video, 0, 0, cvs.width, cvs.height);
+
+    // تشخیص اشیاء
+    const predictions = await cocoModel.detect(video);
+    
+    let personFound = false;
+
+    predictions.forEach(prediction => {
+        // فقط اگر 'person' بود
+        if (prediction.class === 'person') {
+            personFound = true;
+            
+            const [x, y, width, height] = prediction.bbox;
+            const score = prediction.score; // درصد اطمینان (0 تا 1)
+
+            // رسم کادر دور انسان
+            ctx.strokeStyle = "#00ff00";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(x, y, width, height);
+            
+            ctx.font = "18px Arial";
+            ctx.fillStyle = "#00ff00";
+            ctx.fillText(`HUMAN ${(score*100).toFixed(0)}%`, x, y > 10 ? y - 5 : 10);
+
+            // --- الگوریتم انتخاب بهترین عکس ---
+            // فرمول امتیاز: (اندازه تصویر) * (دقت تشخیص)
+            // عکس‌های بزرگتر و مطمئن‌تر امتیاز بیشتری می‌گیرند
+            const clarityScore = (width * height) * score;
+
+            if (clarityScore > bestCaptureScore) {
+                bestCaptureScore = clarityScore;
+                
+                // برش زدن (Crop) فقط محدوده انسان برای عکس سمت راست
+                // کمی حاشیه (Padding) اضافه می‌کنیم که عکس زیباتر شود
+                const padding = 20;
+                const sx = Math.max(0, x - padding);
+                const sy = Math.max(0, y - padding);
+                const sw = Math.min(cvs.width - sx, width + (padding*2));
+                const sh = Math.min(cvs.height - sy, height + (padding*2));
+
+                const captureCanvas = document.createElement('canvas');
+                captureCanvas.width = sw;
+                captureCanvas.height = sh;
+                const cctx = captureCanvas.getContext('2d');
+                
+                // کشیدن آن بخش از تصویر روی کانواس موقت
+                cctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+                
+                // تبدیل به عکس و نمایش در پنل سمت راست
+                const imgData = captureCanvas.toDataURL('image/jpeg');
+                const imgEl = document.getElementById('best-shot-img');
+                imgEl.src = imgData;
+                imgEl.classList.add('has-photo');
+                
+                document.getElementById('confidence-score').innerText = `وضوح: ${Math.floor(clarityScore/100)} امتیاز`;
+            }
+        }
+    });
+
+    if (personFound) {
+        document.getElementById('status-ai').innerText = "🚨 انسان شناسایی شد!";
+        document.getElementById('status-ai').classList.add('alert');
+        startAlarm(true);
+    } else {
+        document.getElementById('status-ai').innerText = "🟢 محیط امن (جستجوی انسان...)";
+        document.getElementById('status-ai').classList.remove('alert');
+        stopAlarm();
+    }
+}
+
 </script>
 
 </body>
