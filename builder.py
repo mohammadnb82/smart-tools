@@ -1,0 +1,184 @@
+import os
+import requests
+
+# --- تنظیمات ---
+ASSETS_DIR = "assets"
+INDEX_FILE = "index.html"
+
+# لیست فایل‌هایی که باید دانلود شوند (برای دور زدن تحریم و آفلاین شدن)
+FILES_TO_DOWNLOAD = {
+    "tf.min.js": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs/dist/tf.min.js",
+    "coco-ssd.min.js": "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd",
+    "model.json": "https://storage.googleapis.com/tfjs-models/savedmodel/ssd_mobilenet_v2/model.json",
+    "group1-shard1of10.bin": "https://storage.googleapis.com/tfjs-models/savedmodel/ssd_mobilenet_v2/group1-shard1of10.bin",
+    "group1-shard2of10.bin": "https://storage.googleapis.com/tfjs-models/savedmodel/ssd_mobilenet_v2/group1-shard2of10.bin",
+    "group1-shard3of10.bin": "https://storage.googleapis.com/tfjs-models/savedmodel/ssd_mobilenet_v2/group1-shard3of10.bin",
+    "group1-shard4of10.bin": "https://storage.googleapis.com/tfjs-models/savedmodel/ssd_mobilenet_v2/group1-shard4of10.bin",
+    "group1-shard5of10.bin": "https://storage.googleapis.com/tfjs-models/savedmodel/ssd_mobilenet_v2/group1-shard5of10.bin",
+    "group1-shard6of10.bin": "https://storage.googleapis.com/tfjs-models/savedmodel/ssd_mobilenet_v2/group1-shard6of10.bin",
+    "group1-shard7of10.bin": "https://storage.googleapis.com/tfjs-models/savedmodel/ssd_mobilenet_v2/group1-shard7of10.bin",
+    "group1-shard8of10.bin": "https://storage.googleapis.com/tfjs-models/savedmodel/ssd_mobilenet_v2/group1-shard8of10.bin",
+    "group1-shard9of10.bin": "https://storage.googleapis.com/tfjs-models/savedmodel/ssd_mobilenet_v2/group1-shard9of10.bin",
+    "group1-shard10of10.bin": "https://storage.googleapis.com/tfjs-models/savedmodel/ssd_mobilenet_v2/group1-shard10of10.bin",
+}
+
+def ensure_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        print(f"Created directory: {directory}")
+
+def download_file(url, filepath):
+    if os.path.exists(filepath):
+        print(f"File exists: {filepath}")
+        return
+    print(f"Downloading {url}...")
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        with open(filepath, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+    except Exception as e:
+        print(f"Error downloading {url}: {e}")
+
+# --- کد HTML نهایی (شامل ۴ پنل و Best Shot) ---
+html_template = """
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Offline Camera</title>
+    <style>
+        body { margin: 0; background: #000; color: #0f0; font-family: monospace; overflow: hidden; }
+        #grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 100vh; width: 100vw; gap: 2px; }
+        .panel { position: relative; background: #111; border: 1px solid #333; overflow: hidden; }
+        video, canvas, img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+        .overlay { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.7); padding: 5px; font-size: 10px; z-index: 10; pointer-events: none; direction: ltr; }
+        #controls { position: absolute; bottom: 10px; left: 10px; z-index: 100; background: rgba(0,0,0,0.8); padding: 5px; border: 1px solid #0f0; }
+        .status-led { width: 8px; height: 8px; border-radius: 50%; background: #333; display: inline-block; margin-left: 5px; }
+        .active { background: #f00; box-shadow: 0 0 5px #f00; }
+        #best-shot-img { display: none; z-index: 5; }
+        #best-shot-img.show { display: block; }
+        #loading { position: fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:999; display:flex; justify-content:center; align-items:center; text-align:center; font-size: 1.5em; }
+    </style>
+    <!-- لود کردن فایل‌های لوکال -->
+    <script src="assets/tf.min.js"></script>
+    <script src="assets/coco-ssd.min.js"></script>
+</head>
+<body>
+
+<div id="loading">در حال بارگذاری سیستم امنیتی...<br>لطفاً صبر کنید (کاملاً آفلاین)</div>
+
+<div id="grid">
+    <!-- پنل ۱: حساسیت بالا -->
+    <div class="panel"><canvas id="c1"></canvas><div class="overlay">P1: High Sensitivity (>600)</div></div>
+    <!-- پنل ۲: حیوانات -->
+    <div class="panel"><canvas id="c2"></canvas><div class="overlay">P2: Animal Track (>2200)</div></div>
+    <!-- پنل ۳: دستی -->
+    <div class="panel"><canvas id="c3"></canvas><div class="overlay">P3: Manual Control</div></div>
+    <!-- پنل ۴: هوش مصنوعی -->
+    <div class="panel">
+        <img id="best-shot-img">
+        <canvas id="c4"></canvas>
+        <div class="overlay">P4: AI Human Best Shot <span id="ai-status" class="status-led"></span></div>
+    </div>
+</div>
+
+<div id="controls">
+    <button onclick="window.location.reload()">Reload</button>
+    <span style="font-size:10px">OFFLINE MODE ACTIVE</span>
+</div>
+<video id="webcam" autoplay playsinline muted style="display:none"></video>
+
+<script>
+    const video = document.getElementById('webcam');
+    const loading = document.getElementById('loading');
+    const aiLed = document.getElementById('ai-status');
+    const bestShotImg = document.getElementById('best-shot-img');
+    const canvases = [document.getElementById('c1'), document.getElementById('c2'), document.getElementById('c3'), document.getElementById('c4')];
+    const ctxs = canvases.map(c => c.getContext('2d'));
+    let model = null;
+    let prevFrameData = null;
+
+    async function start() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+            video.srcObject = stream;
+            await new Promise(r => video.onloadedmetadata = () => { video.play(); r(); });
+            
+            // لود مدل از پوشه assets
+            model = await cocoSsd.load({ modelUrl: 'assets/model.json' });
+            loading.style.display = 'none';
+            detect();
+        } catch(e) {
+            loading.innerHTML = "خطا: " + e.message;
+        }
+    }
+
+    async function detect() {
+        // رسم تصویر در کانواس‌ها
+        canvases.forEach((c, i) => {
+            if (i === 3 && bestShotImg.classList.contains('show')) return; // اگر عکس گرفته شده، آپدیت نکن
+            c.width = video.videoWidth;
+            c.height = video.videoHeight;
+            ctxs[i].drawImage(video, 0, 0, c.width, c.height);
+        });
+
+        // 1. تشخیص حرکت ساده (P1)
+        const frame = ctxs[0].getImageData(0, 0, 100, 100);
+        let score = 0;
+        if (prevFrameData) {
+            for(let i=0; i<frame.data.length; i+=4) score += Math.abs(frame.data[i] - prevFrameData.data[i]);
+        }
+        prevFrameData = frame;
+        if (score > 60000) { ctxs[0].strokeStyle='red'; ctxs[0].strokeRect(10,10,canvases[0].width-20,canvases[0].height-20); }
+
+        // 2. هوش مصنوعی (P4)
+        if (model) {
+            const predictions = await model.detect(video);
+            let human = false;
+            predictions.forEach(p => {
+                const [x,y,w,h] = p.bbox;
+                if(p.class === 'person') {
+                    human = true;
+                    ctxs[3].strokeStyle = '#0f0'; ctxs[3].lineWidth = 4; ctxs[3].strokeRect(x,y,w,h);
+                    if(p.score > 0.8) {
+                        bestShotImg.src = canvases[3].toDataURL();
+                        bestShotImg.classList.add('show');
+                        playBeep();
+                    }
+                }
+            });
+            if(human) aiLed.classList.add('active'); else aiLed.classList.remove('active');
+            if(!human) bestShotImg.classList.remove('show');
+        }
+        requestAnimationFrame(detect);
+    }
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep() {
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+        o.connect(g); g.connect(audioCtx.destination);
+        o.frequency.value = 800; g.gain.value = 0.1;
+        o.start(); o.stop(audioCtx.currentTime + 0.1);
+    }
+
+    start();
+</script>
+</body>
+</html>
+"""
+
+def main():
+    ensure_dir(ASSETS_DIR)
+    for name, url in FILES_TO_DOWNLOAD.items():
+        download_file(url, os.path.join(ASSETS_DIR, name))
+    
+    with open(INDEX_FILE, "w", encoding="utf-8") as f:
+        f.write(html_template)
+    print("DONE: Assets downloaded and index.html generated.")
+
+if __name__ == "__main__":
+    main()
