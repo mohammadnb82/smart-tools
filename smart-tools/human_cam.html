@@ -2,141 +2,125 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Human Camera - MoveNet (Online)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Human Detection (Fix)</title>
     <style>
-        body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #f0f0f0; font-family: sans-serif; height: 100vh; }
-        h1 { margin-bottom: 10px; font-size: 1.2rem; }
-        #canvas-wrapper { position: relative; width: 640px; height: 480px; background: #000; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        video { position: absolute; top: 0; left: 0; width: 640px; height: 480px; object-fit: cover; transform: scaleX(-1); }
-        canvas { position: absolute; top: 0; left: 0; width: 640px; height: 480px; transform: scaleX(-1); }
-        #status { margin-top: 10px; font-weight: bold; color: #333; }
-        #error-log { margin-top: 10px; color: red; font-size: 0.8rem; white-space: pre-wrap; max-width: 90%; text-align: left; }
+        body { margin: 0; background-color: #000; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+        #canvas-wrapper { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        video { position: absolute; min-width: 100%; min-height: 100%; object-fit: cover; }
+        canvas { position: absolute; min-width: 100%; min-height: 100%; object-fit: cover; }
+        #overlay { position: absolute; top: 10px; left: 10px; z-index: 10; color: #0f0; font-family: monospace; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 4px; pointer-events: none;}
     </style>
     
-    <!-- لود کردن کتابخانه‌ها از CDN (نیاز به اینترنت/VPN) -->
+    <!-- کتابخانه‌های آنلاین -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.18.0/dist/tf-backend-webgl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0/dist/pose-detection.js"></script>
 </head>
 <body>
-    <h1>Smart Human Cam (Online Mode)</h1>
+    <div id="overlay">
+        Status: Initializing...<br>
+        FPS: <span id="fps">0</span>
+    </div>
     <div id="canvas-wrapper">
-        <video id="video" playsinline></video>
+        <!-- نکته مهم برای آیفون: playsinline و muted و autoplay -->
+        <video id="video" playsinline muted autoplay></video>
         <canvas id="output"></canvas>
     </div>
-    <div id="status">Initializing...</div>
-    <div id="error-log"></div>
 
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('output');
         const ctx = canvas.getContext('2d');
-        const statusDiv = document.getElementById('status');
-        const errorLog = document.getElementById('error-log');
+        const overlay = document.getElementById('overlay');
+        const fpsSpan = document.getElementById('fps');
         let detector;
+        let lastFrameTime = 0;
+        let isRunning = true;
 
-        function logError(msg) {
-            console.error(msg);
-            errorLog.textContent += "❌ " + msg + "\n";
-            statusDiv.textContent = "Error occurred.";
+        function updateStatus(msg) {
+            overlay.innerHTML = msg + "<br>FPS: <span id='fps'>...</span>";
         }
 
         async function setupCamera() {
             try {
-                // تلاش برای دوربین پشت و سپس جلو
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        width: 640, 
-                        height: 480, 
-                        facingMode: 'environment' 
-                    }
+                    video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
+                    audio: false
                 });
                 video.srcObject = stream;
+                
                 return new Promise((resolve) => {
                     video.onloadedmetadata = () => {
                         video.play();
-                        // تنظیم ابعاد کانواس بر اساس سایز واقعی ویدیو
                         canvas.width = video.videoWidth;
                         canvas.height = video.videoHeight;
-                        video.width = video.videoWidth;
-                        video.height = video.videoHeight;
                         resolve(video);
                     };
                 });
             } catch (err) {
-                logError("Camera Access Error: " + err.message);
-                throw err;
+                alert("Camera Error: " + err.message);
             }
         }
 
         async function loadModel() {
             try {
-                statusDiv.textContent = "Loading TensorFlow (Online)...";
-                
-                // بررسی لود شدن TF
-                if (typeof tf === 'undefined') {
-                    throw new Error("TensorFlow JS failed to load from CDN.");
-                }
-                console.log("TF Version:", tf.version.tfjs);
-
-                await tf.setBackend('webgl');
+                updateStatus("Loading AI...");
                 await tf.ready();
-                
-                statusDiv.textContent = "Loading MoveNet Model (Online)...";
-                
-                // تنظیمات مدل برای دانلود از سرور گوگل
-                const detectorConfig = {
-                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
-                };
-                
-                // ساخت دتکتور (خودکار مدل را دانلود می‌کند)
-                detector = await poseDetection.createDetector(
-                    poseDetection.SupportedModels.MoveNet, 
-                    detectorConfig
-                );
-                
-                statusDiv.textContent = "Running AI...";
-                detectPose();
+                const detectorConfig = { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
+                detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, detectorConfig);
+                updateStatus("System Ready");
+                detectLoop();
             } catch (err) {
-                logError("Model Loading Error: " + err.message);
+                updateStatus("AI Error: " + err.message);
+                console.error(err);
             }
         }
 
-        async function detectPose() {
-            if (!detector) return;
+        async function detectLoop() {
+            if (!isRunning) return;
+            
+            const now = performance.now();
+            const fps = 1000 / (now - lastFrameTime);
+            lastFrameTime = now;
+            if(fpsSpan) fpsSpan.innerText = Math.round(fps);
+
+            // اطمینان از اینکه کانواس هم‌اندازه ویدیو است
+            if (canvas.width !== video.videoWidth) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+            }
+
+            // پاک کردن کانواس
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
             try {
-                const poses = await detector.estimatePoses(video);
-                
-                // پاک کردن و رسم مجدد
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                if (poses && poses.length > 0) {
-                    poses[0].keypoints.forEach(keypoint => {
-                        // فقط نقاط با دقت بالای 30% را رسم کن
-                        if (keypoint.score > 0.3) {
-                            const x = keypoint.x;
-                            const y = keypoint.y;
-                            
-                            ctx.beginPath();
-                            ctx.arc(x, y, 6, 0, 2 * Math.PI);
-                            ctx.fillStyle = '#00FF00'; // سبز روشن
-                            ctx.fill();
-                            ctx.strokeStyle = '#FFFFFF';
-                            ctx.stroke();
-                        }
-                    });
+                if (detector) {
+                    const poses = await detector.estimatePoses(video);
+                    if (poses && poses.length > 0) {
+                        drawSkeleton(poses[0].keypoints);
+                    }
                 }
-                
-                requestAnimationFrame(detectPose);
-            } catch (err) {
-                 console.error(err);
-                 requestAnimationFrame(detectPose);
+            } catch (error) {
+                console.log("Detection skip:", error);
             }
+
+            requestAnimationFrame(detectLoop);
         }
 
-        // شروع برنامه
-        setupCamera().then(loadModel).catch(e => logError("Init failed: " + e.message));
+        function drawSkeleton(keypoints) {
+            keypoints.forEach(point => {
+                if (point.score > 0.3) {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'aqua';
+                    ctx.fill();
+                    ctx.stroke();
+                }
+            });
+        }
+
+        setupCamera().then(loadModel);
     </script>
 </body>
 </html>

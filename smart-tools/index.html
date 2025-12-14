@@ -2,15 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Tools Hub</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body{text-align:center; padding:50px; font-family:sans-serif; background:#333; color:white;} 
-        a{display:block; margin:20px auto; padding:15px; background:#007bff; color:white; text-decoration:none; border-radius:8px; max-width:300px;}
+        body { font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 20px; background: #1a1a1a; color: white; }
+        h1 { margin-bottom: 30px; }
+        .btn { display: block; background: #007AFF; color: white; padding: 20px; margin: 15px auto; border-radius: 12px; text-decoration: none; font-size: 1.2rem; max-width: 300px; }
+        .btn:active { opacity: 0.8; transform: scale(0.98); }
     </style>
 </head>
 <body>
-    <h1>Select Tool</h1>
-    <a href="human_cam.html">Human Detection (Online Mode)</a>
+    <h1>Smart AI Tools</h1>
+    <a href="human_cam.html" class="btn">👤 Human Detection (MoveNet)</a>
+    <a href="general_cam.html" class="btn">📦 Object Detection (Coco-SSD)</a>
+    <p style="color: #666; font-size: 0.8rem; margin-top: 50px;">Running in CDN Mode (Requires VPN)</p>
 </body>
 </html>
