@@ -1,51 +1,96 @@
 import os
 import requests
+import json
+import shutil
 
 # --- تنظیمات ---
 ASSETS_DIR = "assets"
+MOVENET_DIR = os.path.join(ASSETS_DIR, "movenet")
 
-# لیست کتابخانه‌های مورد نیاز که باید دانلود و ذخیره شوند
+# لیست کتابخانه‌های JS
 LIBRARIES = {
     "tf-core.js": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core",
     "tf-converter.js": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter",
     "tf-backend-webgl.js": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl",
     "pose-detection.js": "https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection",
-    "tf.min.js": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs", # نسخه کامل برای اطمینان
+    "tf.min.js": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs", 
     "coco-ssd.js": "https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"
 }
 
-# --- 1. بخش دانلودر و مدیریت فایل‌ها ---
+# آدرس مدل MoveNet Lightning (نسخه سبک و سریع)
+MOVENET_BASE_URL = "https://storage.googleapis.com/tfjs-models/savedmodel/movenet/singlepose/lightning/4/"
+MOVENET_JSON = "model.json"
+
+# --- 1. دانلودر هوشمند (JS + AI Models) ---
 def manage_assets():
     if not os.path.exists(ASSETS_DIR):
         os.makedirs(ASSETS_DIR)
-        print(f"[Folder] Created {ASSETS_DIR}")
-
-    print("[-] Checking libraries...")
+    
+    # الف) دانلود کتابخانه‌های JS
+    print("[-] Checking JS Libraries...")
     for filename, url in LIBRARIES.items():
         filepath = os.path.join(ASSETS_DIR, filename)
-        
-        # اگر فایل وجود دارد، رد شو
-        if os.path.exists(filepath):
-            print(f"   [OK] {filename} exists.")
-            continue
-            
-        # دانلود فایل
-        print(f"   [Downloading] {filename}...")
-        try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                with open(filepath, "wb") as f:
-                    f.write(response.content)
-                print(f"   [Saved] {filepath}")
-            else:
-                print(f"   [Error] Failed to download {url} (Status: {response.status_code})")
-        except Exception as e:
-            print(f"   [Exception] {e}")
+        if not os.path.exists(filepath):
+            print(f"   [Downloading Lib] {filename}...")
+            try:
+                r = requests.get(url)
+                if r.status_code == 200:
+                    with open(filepath, "wb") as f:
+                        f.write(r.content)
+                else:
+                    print(f"   [!] Error downloading {filename}")
+            except Exception as e:
+                print(f"   [!] Exception: {e}")
+        else:
+            print(f"   [OK] {filename}")
 
-# --- 2. تولید صفحات HTML با لینک‌دهی به فایل‌های لوکال ---
+    # ب) دانلود مدل هوش مصنوعی (MoveNet) بصورت کامل
+    if not os.path.exists(MOVENET_DIR):
+        os.makedirs(MOVENET_DIR)
+    
+    print("[-] Checking MoveNet AI Model...")
+    model_json_path = os.path.join(MOVENET_DIR, "model.json")
+    
+    # 1. دانلود فایل JSON مدل
+    if not os.path.exists(model_json_path):
+        print("   [Downloading Model JSON]...")
+        r = requests.get(MOVENET_BASE_URL + MOVENET_JSON)
+        if r.status_code == 200:
+            with open(model_json_path, "wb") as f:
+                f.write(r.content)
+            print("   [Saved] model.json")
+        else:
+            print("   [FATAL] Could not download model.json")
+            return
+
+    # 2. خواندن JSON برای پیدا کردن فایل‌های باینری (Weights)
+    try:
+        with open(model_json_path, "r") as f:
+            model_data = json.load(f)
+            
+        # استخراج نام فایل‌های باینری (.bin)
+        if 'weightsManifest' in model_data:
+            for manifest in model_data['weightsManifest']:
+                for bin_filename in manifest['paths']:
+                    bin_path = os.path.join(MOVENET_DIR, bin_filename)
+                    if not os.path.exists(bin_path):
+                        print(f"   [Downloading Weight] {bin_filename}...")
+                        bin_url = MOVENET_BASE_URL + bin_filename
+                        r = requests.get(bin_url)
+                        if r.status_code == 200:
+                            with open(bin_path, "wb") as bf:
+                                bf.write(r.content)
+                        else:
+                            print(f"   [!] Failed to download weight: {bin_filename}")
+            print("   [OK] All MoveNet files are ready.")
+    except Exception as e:
+        print(f"   [!] Error parsing model: {e}")
+
+
+# --- 2. تولید صفحات HTML (با آدرس دهی لوکال دقیق) ---
 
 def generate_human_cam():
-    # نکته: لینک‌های اسکریپت اکنون به پوشه assets اشاره می‌کنند
+    # نکته مهم: در اینجا modelUrl را به فایل لوکال ارجاع می‌دهیم
     html_content = f"""
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
@@ -86,9 +131,13 @@ def generate_human_cam():
             background: #222; color: #aaa; text-align: center;
         }}
         .score-high {{ color: #0f0; font-weight: bold; }}
+        #error-log {{
+            position: absolute; bottom: 150px; left: 10px; right: 10px;
+            color: red; background: rgba(0,0,0,0.8); padding: 5px; font-size: 10px;
+            display: none; z-index: 200; pointer-events: none;
+        }}
     </style>
     
-    <!-- استفاده از کتابخانه‌های دانلود شده در پوشه assets -->
     <script src="{ASSETS_DIR}/tf-core.js"></script>
     <script src="{ASSETS_DIR}/tf-converter.js"></script>
     <script src="{ASSETS_DIR}/tf-backend-webgl.js"></script>
@@ -107,7 +156,8 @@ def generate_human_cam():
         <a href="index.html" class="btn">BACK</a>
     </div>
     
-    <div id="status" style="position:absolute; top:60px; right:10px; z-index:90; font-size:12px; color:yellow;">Loading Model...</div>
+    <div id="status" style="position:absolute; top:60px; right:10px; z-index:90; font-size:12px; color:yellow;">Initializing System...</div>
+    <div id="error-log"></div>
 
     <div id="viewport">
         <video id="video" autoplay playsinline muted></video>
@@ -122,11 +172,18 @@ def generate_human_cam():
         const ctx = canvas.getContext('2d');
         const gallery = document.getElementById('gallery');
         const statusEl = document.getElementById('status');
+        const errorLog = document.getElementById('error-log');
         
         let detector = null;
         let isMuted = false;
         let sensitivity = 0.5;
         let subjects = []; 
+
+        function logError(msg) {{
+            errorLog.style.display = 'block';
+            errorLog.innerText += "\\n" + msg;
+            console.error(msg);
+        }}
 
         // Audio Context
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -146,9 +203,17 @@ def generate_human_cam():
         document.getElementById('sensitivity').oninput = (e) => {{ sensitivity = e.target.value / 100; document.getElementById('sen-txt').innerText = e.target.value+'%'; }};
 
         async function setupCamera() {{
-            const stream = await navigator.mediaDevices.getUserMedia({{ video: {{ facingMode: 'environment' }}, audio: false }});
-            video.srcObject = stream;
-            return new Promise(resolve => {{ video.onloadedmetadata = () => {{ video.play(); resolve(); }}; }});
+            try {{
+                const stream = await navigator.mediaDevices.getUserMedia({{ 
+                    video: {{ facingMode: 'environment', width: {{ ideal: 640 }}, height: {{ ideal: 480 }} }}, 
+                    audio: false 
+                }});
+                video.srcObject = stream;
+                return new Promise(resolve => {{ video.onloadedmetadata = () => {{ video.play(); resolve(); }}; }});
+            }} catch(e) {{
+                logError("Camera Error: " + e.message);
+                statusEl.innerText = "Camera Fail";
+            }}
         }}
 
         function analyzePose(keypoints) {{
@@ -159,7 +224,7 @@ def generate_human_cam():
             keypoints.forEach((kp, index) => {{
                 if (kp.score > sensitivity) {{
                     if (index <= 4) {{
-                        faceScore += 100; // امتیاز بالا برای چهره
+                        faceScore += 100; 
                     }} else {{
                         bodyScore += 1;
                     }}
@@ -237,6 +302,8 @@ def generate_human_cam():
             const w = Math.min(video.videoWidth - minX, (maxX - minX) + 2*pad);
             const h = Math.min(video.videoHeight - minY, (maxY - minY) + 2*pad);
 
+            if (w <= 0 || h <= 0) return;
+
             const tCanvas = document.createElement('canvas');
             tCanvas.width = w; tCanvas.height = h;
             tCanvas.getContext('2d').drawImage(video, minX, minY, w, h, 0, 0, w, h);
@@ -255,7 +322,7 @@ def generate_human_cam():
             }}
             
             const facePartsCount = poseData.faceScore / 100;
-            card.querySelector('.card-meta').innerHTML = `<span class="${{scoreClass}}">${{desc}}</span><br>Face Parts: ${{facePartsCount}}`;
+            card.querySelector('.card-meta').innerHTML = `<span class="${{scoreClass}}">${{desc}}</span><br>Parts: ${{Math.floor(facePartsCount)}}`;
             
             card.style.borderColor = '#fff';
             setTimeout(() => card.style.borderColor = poseData.faceScore > 0 ? '#0f0' : '#ff0055', 300);
@@ -264,19 +331,26 @@ def generate_human_cam():
         async function detect() {{
             if (!detector) return;
             
-            const poses = await detector.estimatePoses(video);
-            
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            try {{
+                const poses = await detector.estimatePoses(video, {{
+                    maxPoses: 1,
+                    flipHorizontal: false
+                }});
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            poses.forEach(pose => {{
-                drawSkeleton(pose.keypoints);
-                const data = analyzePose(pose.keypoints);
-                if (data.totalScore > 0) {{
-                    updateGallery(data, video);
-                }}
-            }});
+                poses.forEach(pose => {{
+                    drawSkeleton(pose.keypoints);
+                    const data = analyzePose(pose.keypoints);
+                    if (data.totalScore > 0) {{
+                        updateGallery(data, video);
+                    }}
+                }});
+            }} catch(err) {{
+                logError("Detect Error: " + err);
+            }}
             
             requestAnimationFrame(detect);
         }}
@@ -307,13 +381,29 @@ def generate_human_cam():
         }}
 
         async function main() {{
+            statusEl.innerText = "Camera Start...";
             await setupCamera();
-            statusEl.innerText = "Loading MoveNet...";
-            detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {{
-                modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
-            }});
-            statusEl.innerText = "";
-            detect();
+            
+            statusEl.innerText = "Loading AI Core...";
+            try {{
+                await tf.ready();
+                await tf.setBackend('webgl');
+                
+                statusEl.innerText = "Loading Local Model...";
+                
+                // --- بارگذاری مدل از پوشه لوکال ---
+                detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {{
+                    modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
+                    modelUrl: '{ASSETS_DIR}/movenet/model.json' 
+                }});
+                
+                statusEl.innerText = "";
+                detect();
+            }} catch(e) {{
+                statusEl.innerText = "AI FAILED";
+                logError("Setup Error: " + e.message + "\\n" + e.stack);
+                alert("خطا در بارگذاری هوش مصنوعی: " + e.message);
+            }}
         }}
 
         main();
@@ -323,8 +413,9 @@ def generate_human_cam():
     """
     with open("human_cam.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    print("[Generate] human_cam.html created.")
+    print("[Generate] human_cam.html created (OFFLINE MODE).")
 
+# (بخش general_cam و index تغییر خاصی لازم ندارند اما برای تکمیل بودن کد دوباره می‌آورم)
 def generate_general_cam():
     html_content = f"""
 <!DOCTYPE html>
@@ -332,9 +423,9 @@ def generate_general_cam():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>دوربین عمومی (همه اشیاء)</title>
+    <title>دوربین عمومی</title>
     <style>
-        * {{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }}
+        * {{ box-sizing: border-box; }}
         body {{ margin: 0; background: #000; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-family: sans-serif; }}
         #header {{ position: absolute; top:0; left:0; right:0; padding:10px; background:rgba(0,0,0,0.7); z-index:10; display:flex; justify-content:space-between; }}
         #viewport {{ flex:1; position:relative; display:flex; justify-content:center; align-items:center; background:#111; }}
@@ -345,27 +436,26 @@ def generate_general_cam():
         .card div {{ font-size:10px; text-align:center; padding:2px; color:#00aaff; }}
         .btn {{ color:#fff; text-decoration:none; border:1px solid #fff; padding:3px 8px; border-radius:10px; font-size:12px; }}
     </style>
-    
-    <!-- استفاده از کتابخانه‌های دانلود شده -->
     <script src="{ASSETS_DIR}/tf.min.js"></script>
     <script src="{ASSETS_DIR}/coco-ssd.js"></script>
 </head>
 <body>
     <div id="header">
-        <div style="color:#00aaff; font-weight:bold;">دوربین عمومی</div>
+        <div style="color:#00aaff;">دوربین عمومی</div>
         <a href="index.html" class="btn">بازگشت</a>
     </div>
+    <div id="status" style="position:absolute; top:50px; left:10px; color:yellow; font-size:12px;">Loading Model...</div>
     <div id="viewport">
         <video id="webcam" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
     </div>
     <div id="gallery"></div>
-
     <script>
         const video = document.getElementById('webcam');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const gallery = document.getElementById('gallery');
+        const statusEl = document.getElementById('status');
         let model = null;
 
         async function setup() {{
@@ -387,21 +477,27 @@ def generate_general_cam():
 
         async function run() {{
             await setup();
-            model = await cocoSsd.load();
-            setInterval(async () => {{
-                const preds = await model.detect(video);
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.clearRect(0,0,canvas.width,canvas.height);
-                preds.forEach(p => {{
-                    if(p.score > 0.6) {{
-                        ctx.strokeStyle = '#00aaff';
-                        ctx.lineWidth = 2;
-                        ctx.strokeRect(...p.bbox);
-                        if (Math.random() > 0.95) addCard(p); 
-                    }}
-                }});
-            }}, 100);
+            statusEl.innerText = "Loading COCO-SSD...";
+            // توجه: کوکو-اس‌اس‌دی هنوز تلاش می‌کند از اینترنت مدل بگیرد چون مدیریت آن پیچیده‌تر است
+            // اما چون فایل‌های اصلی JS لوکال هستند سرعت لود بهتر است
+            try {{
+                model = await cocoSsd.load();
+                statusEl.innerText = "";
+                setInterval(async () => {{
+                    const preds = await model.detect(video);
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.clearRect(0,0,canvas.width,canvas.height);
+                    preds.forEach(p => {{
+                        if(p.score > 0.6) {{
+                            ctx.strokeStyle = '#00aaff'; ctx.lineWidth = 2; ctx.strokeRect(...p.bbox);
+                            if (Math.random() > 0.98) addCard(p); 
+                        }}
+                    }});
+                }}, 100);
+            }} catch(e) {{
+                statusEl.innerText = "Load Failed (Need Internet for Model)";
+            }}
         }}
         run();
     </script>
@@ -419,22 +515,24 @@ def generate_index():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پنل امنیتی</title>
+    <title>پنل امنیتی هوشمند</title>
     <style>
         body { background: #111; color: white; font-family: sans-serif; text-align: center; padding-top: 50px; }
         .btn {
             display: block; width: 85%; max-width: 400px; margin: 20px auto; padding: 25px;
             border-radius: 20px; text-decoration: none; font-size: 20px; font-weight: bold;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
         }
+        .btn:active { transform: scale(0.95); }
         .human { background: linear-gradient(45deg, #ff0055, #ff5500); color: white; }
         .general { background: linear-gradient(45deg, #0055ff, #00aaff); color: white; }
     </style>
 </head>
 <body>
-    <h2>انتخاب دوربین</h2>
-    <a href="human_cam.html" class="btn human">تشخیص آناتومی انسان 🧠<br><span style="font-size:12px; opacity:0.8">(اولویت با چهره و هویت)</span></a>
-    <a href="general_cam.html" class="btn general">عمومی (همه اشیاء) 📷<br><span style="font-size:12px; opacity:0.8">(ماشین، حیوان، کیف و...)</span></a>
+    <h2>سیستم نظارتی هوشمند</h2>
+    <a href="human_cam.html" class="btn human">تشخیص آناتومی و چهره 🧠<br><span style="font-size:12px; opacity:0.8">(کاملاً آفلاین و سریع)</span></a>
+    <a href="general_cam.html" class="btn general">تشخیص عمومی اشیاء 📷<br><span style="font-size:12px; opacity:0.8">(ماشین، کیف، حیوانات)</span></a>
 </body>
 </html>
     """
@@ -444,8 +542,8 @@ def generate_index():
 
 # --- اجرای برنامه ---
 if __name__ == "__main__":
-    manage_assets()      # اول کتابخانه‌ها را دانلود می‌کند
-    generate_human_cam() # سپس فایل‌های HTML را با آدرس لوکال می‌سازد
+    manage_assets() 
+    generate_human_cam()
     generate_general_cam()
     generate_index()
-    print("\n--- DONE: All files generated & libraries downloaded ---")
+    print("\n--- SYSTEM READY FOR GITHUB UPLOAD ---")
