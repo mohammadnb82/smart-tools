@@ -1,0 +1,24 @@
+name: builder.py
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v3
+
+      # این مرحله حیاتی است: فایل‌های موجود را به عنوان سایت بیلد شده در نظر می‌گیرد
+      - name: Deploy to GitHub Pages 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: .
+          clean: false
