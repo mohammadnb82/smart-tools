@@ -1,6 +1,113 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
-<head><meta charset="UTF-8"><title>Video Tools</title></head>
-<body style="background:#111;color:white;text-align:center;padding:50px;">
-<h1>سایت ویدیو حرفه‌ای</h1><p>این سایت توسط ربات ساخته شده است.</p>
-</body></html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>کارخانه ابزار هوشمند | نسخه آزمایشی</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #1a1a1a; color: #e5e5e5; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        
+        /* استایل صنعتی برای محیط توسعه */
+        .tech-card {
+            background: linear-gradient(145deg, #262626, #1f1f1f);
+            border: 1px solid #333;
+            box-shadow: 5px 5px 10px #141414, -5px -5px 10px #2e2e2e;
+            transition: all 0.2s ease;
+        }
+        
+        .card-active:hover {
+            border-color: #f97316; /* نارنجی */
+            transform: translateY(-2px);
+            box-shadow: 0 0 15px rgba(249, 115, 22, 0.2);
+        }
+
+        .card-empty { opacity: 0.4; border-style: dashed; }
+        
+        /* نشانگر وضعیت */
+        .status-dot {
+            height: 8px; width: 8px; border-radius: 50%; display: inline-block;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-6 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- هدر کارخانه -->
+        <header class="flex justify-between items-center mb-10 border-b border-gray-700 pb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-orange-500">
+                    <i class="fas fa-cogs ml-2"></i>کارخانه ابزارسازی
+                </h1>
+                <p class="text-gray-500 text-sm mt-1">محیط توسعه و تست ماژولار (Dev Environment)</p>
+            </div>
+            <div class="bg-gray-800 px-4 py-2 rounded text-xs font-mono text-orange-300">
+                STATUS: ACTIVE
+            </div>
+        </header>
+
+        <!-- شبکه ابزارها -->
+        <div id="factory-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <!-- کارت‌ها اینجا تولید می‌شوند -->
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 🏗️ لیست پروژه‌های در دست ساخت
+        // ==========================================
+        // نکته مهم: هر ابزار باید در پوشه tools/name قرار داشته باشد
+        const projects = [
+            { 
+                id: 1, 
+                name: "motion-cam", // نام پوشه در دایرکتوری tools
+                title: "دوربین تشخیص حرکت", 
+                icon: "fa-video", 
+                status: "testing" // وضعیت: testing, stable, dev
+            },
+            // ابزارهای بعدی اینجا اضافه می‌شوند
+        ];
+
+        // پر کردن بقیه تا ۵۰
+        for (let i = projects.length + 1; i <= 50; i++) {
+            projects.push({ id: i, name: null, title: `پروژه ${i}`, icon: "fa-cube", status: "empty" });
+        }
+
+        const grid = document.getElementById('factory-grid');
+
+        projects.forEach(proj => {
+            const isEmpty = proj.status === 'empty';
+            
+            // تعیین رنگ وضعیت
+            let statusColor = 'bg-gray-600';
+            if (proj.status === 'testing') statusColor = 'bg-yellow-500'; // زرد برای تست
+            if (proj.status === 'stable') statusColor = 'bg-green-500';   // سبز برای آماده
+            if (proj.status === 'dev') statusColor = 'bg-blue-500';       // آبی برای در حال ساخت
+
+            // ساخت لینک: tools/folder_name/index.html
+            const link = isEmpty ? '#' : `tools/${proj.name}/index.html`;
+            
+            const html = `
+                <a href="${link}" class="block h-full group">
+                    <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between ${isEmpty ? 'card-empty' : 'card-active cursor-pointer'}">
+                        
+                        <div class="flex justify-between items-start">
+                            <i class="fas ${proj.icon} text-2xl ${isEmpty ? 'text-gray-600' : 'text-orange-400'}"></i>
+                            ${!isEmpty ? `<span class="${statusColor} status-dot shadow-lg shadow-current"></span>` : ''}
+                        </div>
+
+                        <div>
+                            <h3 class="font-bold text-sm ${isEmpty ? 'text-gray-500' : 'text-gray-200'}">
+                                ${proj.title}
+                            </h3>
+                            ${!isEmpty ? `<p class="text-[10px] text-gray-500 font-mono mt-1">/tools/${proj.name}</p>` : ''}
+                        </div>
+                    </div>
+                </a>
+            `;
+            grid.innerHTML += html;
+        });
+    </script>
+</body>
+</html>
