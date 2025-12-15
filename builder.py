@@ -1,211 +1,154 @@
 import os
 import subprocess
-import requests
-from datetime import datetime
+import shutil
 
-# --- تنظیمات رنگ و لاگ ---
-class Colors:
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
+def run_command(command):
+    """Executes a shell command and prints the output."""
+    try:
+        result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+        print(f"✅ Command: {command}")
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Error: {command}\n{e.stderr}")
+        return None
 
-def log(message, level="info"):
-    timestamp = datetime.now().strftime("%H:%M:%S")
-    if level == "info":
-        print(f"{Colors.BLUE}[INFO - {timestamp}] {message}{Colors.ENDC}")
-    elif level == "success":
-        print(f"{Colors.GREEN}[SUCCESS - {timestamp}] {message}{Colors.ENDC}")
-    elif level == "error":
-        print(f"{Colors.FAIL}[ERROR - {timestamp}] {message}{Colors.ENDC}")
-
-# --- بخش 1: تولید وب‌سایت (نسخه آبی تیره V5) ---
 def create_professional_site():
-    log("Starting to build the HTML structure...")
-    
-    html_content = f"""
-    <!DOCTYPE html>
-    <html lang="fa" dir="rtl">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>پنل هوشمند | Smart Dashboard</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <style>
-            :root {{
-                --primary-bg: #0f172a;
-                --secondary-bg: #1e293b;
-                --accent-color: #38bdf8;
-                --text-color: #f1f5f9;
-            }}
-            body {{
-                background-color: var(--primary-bg);
-                color: var(--text-color);
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            }}
-            .glass-card {{
-                background: rgba(30, 41, 59, 0.7);
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 15px;
-                padding: 20px;
-                margin-bottom: 20px;
-                transition: transform 0.3s ease;
-            }}
-            .glass-card:hover {{
-                transform: translateY(-5px);
-                border-color: var(--accent-color);
-            }}
-            .status-badge {{
-                background-color: rgba(56, 189, 248, 0.2);
-                color: var(--accent-color);
-                padding: 5px 15px;
-                border-radius: 20px;
-                font-size: 0.9em;
-            }}
-            .btn-glow {{
-                background: linear-gradient(45deg, #0ea5e9, #2563eb);
-                border: none;
-                color: white;
-                box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
-            }}
-            footer {{
-                text-align: center;
-                margin-top: 50px;
-                padding: 20px;
-                color: #64748b;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container py-5">
-            <header class="text-center mb-5">
-                <h1 class="display-4 fw-bold"><i class="fas fa-robot me-2"></i>سامانه هوشمند نسخه 5.0</h1>
-                <p class="lead text-muted">این سایت توسط ربات پایتون در GitHub Actions ساخته شده است</p>
-                <div class="mt-3">
-                    <span class="status-badge">وضعیت: آنلاین</span>
-                    <span class="status-badge ms-2">آخرین آپدیت: {datetime.now().strftime("%Y-%m-%d %H:%M")}</span>
-                </div>
-            </header>
+    print("🚀 Starting God Mode Deployment...")
 
-            <div class="row">
-                <!-- پنل آمار -->
-                <div class="col-md-4">
-                    <div class="glass-card text-center">
-                        <i class="fas fa-server fa-3x mb-3 text-warning"></i>
-                        <h3>سرور بیلد</h3>
-                        <p>اجرا شده روی Ubuntu Latest</p>
-                        <button class="btn btn-sm btn-outline-light w-100">مشاهده لاگ</button>
+    # 1. Setup Environment Variables
+    token = os.environ.get("PERSONAL_TOKEN")
+    repo_name = "stable-site"
+    # Get the current user name from the current repo info
+    full_repo = os.environ.get("GITHUB_REPOSITORY", "mohammadnb82/smart-tools")
+    username = full_repo.split("/")[0]
+
+    # 2. Define the Professional HTML Content (Video Tool)
+    html_content = """<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Editor Pro | ابزار ویرایش ویدیو</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ffmpeg/0.11.6/ffmpeg.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1a1a1a; color: white; }
+        .glass { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .btn { transition: all 0.3s ease; }
+        .btn:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-gray-900 to-black">
+    <div class="glass rounded-2xl p-8 w-full max-w-4xl shadow-2xl relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+        
+        <div class="text-center mb-8">
+            <h1 class="text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">ویرایشگر حرفه‌ای ویدیو</h1>
+            <p class="text-gray-400 text-lg">قدرتمند، سریع و امن در مرورگر شما</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Upload Zone -->
+            <div class="border-2 border-dashed border-gray-600 rounded-xl p-10 text-center hover:border-blue-500 transition cursor-pointer bg-gray-800/50" id="drop-zone">
+                <i class="fas fa-cloud-upload-alt text-6xl mb-6 text-blue-500"></i>
+                <h3 class="text-xl font-bold mb-2">بارگذاری ویدیو</h3>
+                <p class="text-gray-400 text-sm">فایل را اینجا رها کنید یا کلیک کنید</p>
+                <input type="file" id="uploader" class="hidden" accept="video/*">
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="space-y-6 flex flex-col justify-center">
+                <div class="bg-gray-800 p-6 rounded-xl border border-gray-700">
+                    <h3 class="font-bold mb-4 flex items-center gap-2"><i class="fas fa-wrench text-yellow-500"></i> ابزارها</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button class="btn bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg text-sm font-bold shadow-lg">
+                            <i class="fas fa-cut mr-2"></i> برش (Trim)
+                        </button>
+                        <button class="btn bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg text-sm font-bold shadow-lg">
+                            <i class="fas fa-compress mr-2"></i> فشرده‌سازی
+                        </button>
+                        <button class="btn bg-purple-600 hover:bg-purple-700 px-4 py-3 rounded-lg text-sm font-bold shadow-lg col-span-2">
+                            <i class="fas fa-magic mr-2"></i> استخراج صدا (MP3)
+                        </button>
                     </div>
                 </div>
                 
-                <!-- پنل دسترسی -->
-                <div class="col-md-4">
-                    <div class="glass-card text-center">
-                        <i class="fas fa-shield-alt fa-3x mb-3 text-success"></i>
-                        <h3>سطح دسترسی</h3>
-                        <p>God Mode Active</p>
-                        <button class="btn btn-sm btn-outline-light w-100">بررسی امنیت</button>
-                    </div>
-                </div>
-
-                <!-- پنل ابزار -->
-                <div class="col-md-4">
-                    <div class="glass-card text-center">
-                        <i class="fas fa-rocket fa-3x mb-3 text-danger"></i>
-                        <h3>دیپلوی خودکار</h3>
-                        <p>انتشار همزمان در Dev و Prod</p>
-                        <button class="btn btn-sm btn-glow w-100">جزئیات</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="glass-card">
-                        <h4><i class="fas fa-terminal me-2"></i>گزارش عملیات اخیر</h4>
-                        <hr class="border-secondary">
-                        <ul class="list-unstyled">
-                            <li class="mb-2">✅ دریافت کد از مخزن اصلی</li>
-                            <li class="mb-2">✅ نصب کتابخانه‌های Selenium و WebDriver</li>
-                            <li class="mb-2">✅ تولید فایل index.html جدید</li>
-                            <li class="mb-2 text-info">🚀 در حال ارسال به مخزن دوم (Production)...</li>
-                        </ul>
-                    </div>
+                <div class="bg-gray-900 p-4 rounded-xl border border-gray-800">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">System Log</h3>
+                    <p class="text-xs text-green-400 font-mono" id="log">> سیستم آماده است...</p>
                 </div>
             </div>
         </div>
 
-        <footer>
-            <small>Powered by Python & GitHub Actions | Auto-Generated</small>
-        </footer>
-    </body>
-    </html>
-    """
-    
+        <div class="mt-8 pt-6 border-t border-gray-700 text-center flex justify-between items-center text-xs text-gray-500">
+            <span>نسخه 2.0 (Stable)</span>
+            <span>Powered by GitHub Actions & FFmpeg</span>
+        </div>
+    </div>
+
+    <script>
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
+        
+        document.getElementById('drop-zone').addEventListener('click', () => document.getElementById('uploader').click());
+        
+        document.getElementById('uploader').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            const log = document.getElementById('log');
+            if(file){
+                log.innerText = "> در حال بارگذاری هسته پردازشی...";
+                if(!ffmpeg.isLoaded()) await ffmpeg.load();
+                log.innerText = "> فایل دریافت شد: " + file.name + " | آماده پردازش.";
+            }
+        });
+    </script>
+</body>
+</html>"""
+
+    # 3. Create index.html in the CURRENT repo (smart-tools)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
-    log("index.html created successfully!", "success")
+    print("✅ index.html generated locally (smart-tools).")
 
-# --- بخش 2: اتصال به مخزن دوم (God Mode Feature) ---
-def deploy_to_external_repo():
-    token = os.environ.get('PERSONAL_TOKEN')
-    
-    # تنظیمات مخزن دوم (اینجا را می‌توانید تغییر دهید)
-    # مثلا اگر نام مخزن دوم شما stable-site است
-    target_repo_name = "stable-site"  
-    # نام کاربری گیت‌هاب شما (به صورت خودکار از محیط گرفته می‌شود یا دستی وارد کنید)
-    github_user = os.environ.get('GITHUB_ACTOR') 
-    
+    # 4. DEPLOY TO SECOND REPO (stable-site)
     if not token:
-        log("No PERSONAL_TOKEN found. Skipping external deploy.", "warning")
+        print("⚠️ SKIP: PERSONAL_TOKEN not found. Cannot deploy to stable-site.")
         return
 
-    log(f"Preparing to deploy to external repo: {target_repo_name}...", "info")
-
-    repo_url = f"https://{github_user}:{token}@github.com/{github_user}/{target_repo_name}.git"
+    print(f"🔄 Preparing to deploy to SECOND repo: {repo_name}...")
     
-    try:
-        # 1. تنظیم هویت گیت
-        subprocess.run(["git", "config", "--global", "user.email", "bot@github.com"], check=True)
-        subprocess.run(["git", "config", "--global", "user.name", "Python Bot"], check=True)
+    # Configure Git
+    run_command(f'git config --global user.email "{username}@users.noreply.github.com"')
+    run_command(f'git config --global user.name "{username}"')
+
+    # Clone the target repo using the token
+    clone_url = f"https://oauth2:{token}@github.com/{username}/{repo_name}.git"
+    
+    # Clean up if folder exists
+    if os.path.exists(repo_name):
+        shutil.rmtree(repo_name)
         
-        # 2. کلون کردن مخزن دوم
-        log("Cloning target repository...")
-        if os.path.exists("temp_repo"):
-            subprocess.run(["rm", "-rf", "temp_repo"], check=True)
-            
-        subprocess.run(["git", "clone", repo_url, "temp_repo"], check=True)
+    run_command(f"git clone {clone_url}")
+
+    if os.path.exists(repo_name):
+        # Copy the new index.html to the cloned repo folder
+        shutil.copy("index.html", f"{repo_name}/index.html")
         
-        # 3. کپی کردن فایل index.html ساخته شده به مخزن دوم
-        log("Copying files...")
-        subprocess.run(["cp", "index.html", "temp_repo/index.html"], check=True)
+        # Go inside, commit and push
+        os.chdir(repo_name)
+        run_command("git add .")
+        run_command('git commit -m "Auto-update: Deployed Video Tool 🚀"')
+        push_output = run_command("git push")
         
-        # 4. کامیت و پوش
-        os.chdir("temp_repo") # رفتن به داخل پوشه مخزن دوم
-        subprocess.run(["git", "add", "."], check=True)
-        
-        # بررسی تغییرات
-        status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True)
-        if status.stdout.strip():
-            subprocess.run(["git", "commit", "-m", f"Auto-update by Python Bot: {datetime.now()}"], check=True)
-            subprocess.run(["git", "push"], check=True)
-            log("Successfully deployed to SECOND repository! 🚀", "success")
+        if push_output is not None:
+             print("✅ SUCCESS: Deployed to stable-site! 🚀")
         else:
-            log("No changes detected in second repo.", "info")
-            
-    except Exception as e:
-        log(f"Error in external deploy: {e}", "er")
-    finally:
-        # برگشتن به مسیر اصلی (اختیاری)
-        pass
+             print("⚠️ Push attempt finished (check logs if updated).")
+        
+        os.chdir("..") # Return to root
+    else:
+        print(f"❌ ERROR: Could not clone {repo_name}. Does the repo exist?")
 
-# --- اجرای اصلی ---
 if __name__ == "__main__":
-    log("--- PYTHON GOD MODE STARTED ---")
-    
-    # 1. ساخت سایت
-    create_professional_site()e()
+    create_professional_sit
