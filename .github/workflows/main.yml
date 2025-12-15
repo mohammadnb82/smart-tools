@@ -6,12 +6,12 @@ on:
     branches: [ "main" ]
   # قابلیت اجرای دستی با دکمه در پنل Actions
   workflow_dispatch:
-  # قابلیت اجرا به صورت زمان‌بندی شده (مثلاً هر ۶ ساعت) - الان غیرفعال است
+  # قابلیت اجرا به صورت زمان‌بندی شده (الان غیرفعال است)
   # schedule:
   #   - cron: "0 */6 * * *"
 
 permissions:
-  contents: write      # اجازه نوشتن و حذف فایل‌ها در ریپازیتوری
+  contents: write      # اجازه نوشتن و حذف فایل‌ها
   pages: write         # اجازه انتشار سایت
   id-token: write      # اجازه احراز هویت امن
 
@@ -22,7 +22,7 @@ jobs:
     steps:
       # ۱. دانلود کل فایل‌های پروژه روی سرور
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # ۲. آماده‌سازی محیط پایتون
       - name: Setup Python Environment
@@ -31,33 +31,35 @@ jobs:
           python-version: '3.10'
 
       # ۳. نصب ابزارهای قدرت (Selenium, Chrome, Requests)
-      # این مرحله مرورگر کروم و درایورهای لازم برای کلیک و وب‌گردی را نصب می‌کند
+      # تمام ابزارهایی که در کد قبلی داشتید اینجا حفظ شده‌اند
       - name: Install System & Python Dependencies
         run: |
           # آپدیت سیستم و نصب کروم
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable unzip
           
-          # نصب کتابخانه‌های پایتون برای دانلود، وب‌گردی و پردازش
+          # نصب کتابخانه‌های پایتون
           pip install --upgrade pip
           pip install selenium webdriver-manager requests beautifulsoup4 lxml
 
       # ۴. اجرای فرمانده اصلی (اسکریپت پایتون)
-      # تمام هوش و منطق شما در builder.py خواهد بود
-      # ما تمام توکن‌های مخفی (Secrets) را به پایتون پاس می‌دهیم
+      # تغییر اصلی اینجاست: شاه‌کلید (PERSONAL_TOKEN) اضافه شد
       - name: Run Python Commander (builder.py)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # اگر در آینده توکنی اضافه کردید، اینجا لیست کنید:
+          
+          # >>> شاه‌کلید جدید برای دسترسی به مخزن دوم <<<
+          PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
+
+          # توکن‌های احتمالی دیگر (حفظ شده‌اند)
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
           INSTAGRAM_TOKEN: ${{ secrets.INSTAGRAM_TOKEN }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: python builder.py
 
-      # ۵. انتشار نهایی و تمیزکاری
-      # هر فایلی که پایتون ساخته باشد را منتشر می‌کند
-      # گزینه clean: true یعنی هر فایلی که پایتون حذف کرده باشد، از سایت نهایی هم حذف می‌شود
+      # ۵. انتشار نهایی در همین مخزن (محیط توسعه/Development)
+      # این بخش نتیجه را در همین مخزن فعلی هم نمایش می‌دهد
       - name: Deploy Result to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
