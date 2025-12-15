@@ -1,295 +1,240 @@
 import os
 import subprocess
 
-def deploy_face_scoring_app():
-    print("--- BUILDING FINAL FACE SCORING APP ---")
+def deploy_sequential_app():
+    print("--- DEPLOYING v2.0 SEQUENTIAL LOAD (STABLE) ---")
     
     html_content = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI Face Scorer</title>
+    <title>Face Scorer v2.0</title>
     <style>
         body { margin: 0; background: #000; font-family: 'Courier New', Courier, monospace; overflow: hidden; color: #0f0; }
         
-        /* Main Container */
-        #container { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; }
-        
-        /* Camera Feed */
-        #cam-wrapper { position: relative; flex: 1; overflow: hidden; border-bottom: 2px solid #0f0; background: #111; }
-        video { width: 100%; height: 100%; object-fit: cover; opacity: 1; }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-
-        /* Dashboard (Bottom) */
-        #dashboard { height: 260px; background: #111; display: flex; align-items: center; padding: 15px; gap: 15px; border-top: 2px solid #0f0; box-shadow: 0 -5px 20px rgba(0, 255, 0, 0.2); }
-        
-        /* Best Shot Box */
-        .best-shot-box { 
-            width: 130px; height: 170px; 
-            border: 2px dashed #0f0; 
+        /* Loading Screen */
+        #loading-screen { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; z-index: 100; 
             display: flex; flex-direction: column; 
-            align-items: center; justify-content: center;
-            background: #000;
-            position: relative;
-            border-radius: 8px;
-            overflow: hidden;
+            justify-content: center; align-items: center; 
+            text-align: center;
         }
-        .best-shot-box img { width: 100%; height: 100%; object-fit: cover; display: none; }
-        .best-shot-label { position: absolute; bottom: 0; background: rgba(0, 255, 0, 0.8); color: #000; width: 100%; text-align: center; font-weight: bold; font-size: 10px; padding: 2px 0; }
+        .spinner { 
+            width: 50px; height: 50px; 
+            border: 5px solid #333; border-top: 5px solid #0f0; 
+            border-radius: 50%; animation: spin 1s infinite linear; 
+            margin-bottom: 20px;
+        }
+        .status-text { font-size: 14px; color: #fff; margin-top: 10px; }
         
-        /* Stats Area */
-        .stats { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-        .stat-row { display: flex; justify-content: space-between; font-size: 13px; border-bottom: 1px solid #333; padding-bottom: 4px; }
-        .score-container { text-align: center; margin-top: 5px; }
-        .score-label { font-size: 12px; color: #fff; margin-bottom: 0px; }
-        .score-big { font-size: 45px; font-weight: bold; color: #0f0; text-shadow: 0 0 15px #0f0; line-height: 1; }
+        /* Main App (Hidden initially) */
+        #app-container { display: none; width: 100vw; height: 100vh; flex-direction: column; }
         
-        /* Loading Overlay */
-        #loading { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid #0f0; border-radius: 50%; animation: spin 1s infinite linear; margin-bottom: 20px;}
-        .loading-text { color: #0f0; font-size: 14px; letter-spacing: 2px; }
+        #cam-wrapper { position: relative; flex: 1; overflow: hidden; background: #111; border-bottom: 2px solid #0f0; }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+
+        /* Dashboard */
+        #dashboard { height: 250px; background: #111; display: flex; padding: 10px; gap: 10px; align-items: center; }
         
+        .score-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #333; border-radius: 8px; }
+        .score-val { font-size: 60px; font-weight: bold; color: #0f0; text-shadow: 0 0 10px #0f0; }
+        .score-title { font-size: 12px; color: #888; }
+        
+        .best-shot { width: 100px; height: 130px; border: 2px solid #0f0; border-radius: 8px; overflow: hidden; position: relative; background: #000; }
+        .best-shot img { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        .best-label { position: absolute; bottom: 0; width: 100%; background: rgba(0,255,0,0.8); color: #000; font-size: 10px; text-align: center; }
+
         @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 
-    <!-- CLASSIC LOADING (The method that worked on your iPhone) -->
+    <!-- CLASSIC SCRIPTS (No Modules) -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.18.0/dist/tf-backend-webgl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0/dist/pose-detection.js"></script>
 </head>
 <body>
 
-    <div id="loading">
+    <!-- 1. LOADING SCREEN -->
+    <div id="loading-screen">
         <div class="spinner"></div>
-        <p class="loading-text">SYSTEM INITIALIZING...</p>
+        <div id="status-msg" class="status-text">INITIALIZING...</div>
+        <div id="sub-status" style="color: #666; font-size: 10px; margin-top:5px;">Please wait</div>
     </div>
 
-    <div id="container">
+    <!-- 2. MAIN APP -->
+    <div id="app-container">
         <div id="cam-wrapper">
-            <!-- playsinline is CRITICAL for iOS -->
             <video id="video" playsinline muted autoplay></video>
             <canvas id="output"></canvas>
         </div>
-        
         <div id="dashboard">
-            <div class="best-shot-box">
-                <img id="best-img" src="" alt="Best Shot">
-                <div class="best-shot-label">BEST CAPTURE</div>
+            <div class="best-shot">
+                <img id="best-img" src="">
+                <div class="best-label">BEST</div>
             </div>
-            
-            <div class="stats">
-                <div class="stat-row"><span>NOSE</span> <span id="s-nose">--</span></div>
-                <div class="stat-row"><span>EYES (L/R)</span> <span id="s-eyes">--</span></div>
-                <div class="stat-row"><span>EARS (L/R)</span> <span id="s-ears">--</span></div>
-                
-                <div class="score-container">
-                    <div class="score-label">QUALITY SCORE</div>
-                    <div id="current-score" class="score-big">0</div>
-                </div>
+            <div class="score-box">
+                <div class="score-title">ATTRACTIVENESS SCORE</div>
+                <div id="score" class="score-val">--</div>
             </div>
         </div>
     </div>
 
-    <!-- Hidden canvas for cropping the face -->
-    <canvas id="crop-canvas" style="display:none;"></canvas>
-
     <script>
+        // DOM Elements
+        const statusMsg = document.getElementById('status-msg');
+        const subStatus = document.getElementById('sub-status');
+        const loadingScreen = document.getElementById('loading-screen');
+        const appContainer = document.getElementById('app-container');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('output');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const bestImgEl = document.getElementById('best-img');
+
         let detector;
-        let video = document.getElementById('video');
-        let canvas = document.getElementById('output');
-        let ctx = canvas.getContext('2d');
-        let cropCanvas = document.getElementById('crop-canvas');
-        let cropCtx = cropCanvas.getContext('2d');
-        
-        let bestImg = document.getElementById('best-img');
-        let scoreDisplay = document.getElementById('current-score');
-        
-        let sNose = document.getElementById('s-nose');
-        let sEyes = document.getElementById('s-eyes');
-        let sEars = document.getElementById('s-ears');
-
         let maxScore = 0;
-        let isModelLoaded = false;
 
-        async function setupCamera() {
+        // --- STEP 1: LOAD AI MODEL (NO CAMERA YET) ---
+        async function initApp() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { 
-                        facingMode: 'user', // Selfie camera
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
-                    },
-                    audio: false
-                });
-                video.srcObject = stream;
-                return new Promise(resolve => {
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        resolve();
-                    };
-                });
+                statusMsg.innerText = "LOADING AI MODEL...";
+                subStatus.innerText = "Downloading neural network (~10MB)";
+                
+                await tf.ready();
+                console.log("TF Ready");
+                
+                detector = await poseDetection.createDetector(
+                    poseDetection.SupportedModels.MoveNet, 
+                    { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
+                );
+                
+                statusMsg.innerText = "MODEL READY!";
+                subStatus.innerText = "Starting Camera...";
+                
+                // Only start camera AFTER model is ready
+                setTimeout(startCamera, 1000);
+                
             } catch (e) {
-                alert("Camera Access Error: " + e.message);
+                statusMsg.innerText = "ERROR LOADING AI";
+                subStatus.innerText = e.message;
+                statusMsg.style.color = "red";
             }
         }
 
-        async function loadModel() {
-            await tf.ready();
-            // Using MoveNet SinglePose Lightning (Fast & Stable)
-            detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {
-                modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING
-            });
-            isModelLoaded = true;
-            document.getElementById('loading').style.display = 'none';
-            detectLoop();
+        // --- STEP 2: START CAMERA (ONLY AFTER STEP 1) ---
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'user', width: 640, height: 480 },
+                    audio: false
+                });
+                video.srcObject = stream;
+                
+                video.onloadedmetadata = () => {
+                    video.play();
+                    // Switch UI
+                    loadingScreen.style.display = 'none';
+                    appContainer.style.display = 'flex';
+                    // Start Loop
+                    detectLoop();
+                };
+            } catch (e) {
+                statusMsg.innerText = "CAMERA DENIED";
+                subStatus.innerText = "Please allow camera access and refresh.";
+                statusMsg.style.color = "orange";
+            }
         }
 
+        // --- STEP 3: DETECTION LOOP ---
         async function detectLoop() {
-            if (isModelLoaded && video.readyState === 4) {
-                // Ensure canvas matches video size
+            if (video.readyState === 4) {
+                // Resize canvas to match video
                 if (canvas.width !== video.videoWidth) {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                 }
 
-                try {
-                    const poses = await detector.estimatePoses(video);
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const poses = await detector.estimatePoses(video);
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                if (poses.length > 0) {
+                    const k = poses[0].keypoints;
+                    // Check if face is visible (Nose, Eyes, Ears)
+                    const facePoints = k.slice(0, 5); 
+                    const visiblePoints = facePoints.filter(p => p.score > 0.3);
 
-                    if (poses.length > 0) {
-                        processPose(poses[0]);
+                    if (visiblePoints.length >= 3) {
+                        calculateScore(facePoints);
+                        drawFace(facePoints);
+                    } else {
+                        scoreEl.innerText = "--";
                     }
-                } catch (err) {
-                    console.error("Detection Error", err);
                 }
             }
             requestAnimationFrame(detectLoop);
         }
 
-        function processPose(pose) {
-            const k = pose.keypoints;
+        function calculateScore(keypoints) {
+            // Simple scoring logic based on confidence & symmetry
+            let rawScore = 0;
+            keypoints.forEach(p => rawScore += p.score);
             
-            // MoveNet Keypoint Mapping:
-            // 0: nose
-            // 1: left_eye
-            // 2: right_eye
-            // 3: left_ear
-            // 4: right_ear
+            // Normalize roughly to 0-100
+            let finalScore = Math.min(Math.floor((rawScore / 5) * 110), 100);
             
-            let currentScore = 0;
-            let parts = { nose: 0, l_eye: 0, r_eye: 0, l_ear: 0, r_ear: 0 };
-            const THRESHOLD = 0.4; // Confidence threshold
+            scoreEl.innerText = finalScore;
 
-            // Calculate Score (20 pts each part)
-            if (k[0].score > THRESHOLD) { currentScore += 20; parts.nose = 1; }
-            if (k[1].score > THRESHOLD) { currentScore += 20; parts.l_eye = 1; }
-            if (k[2].score > THRESHOLD) { currentScore += 20; parts.r_eye = 1; }
-            if (k[3].score > THRESHOLD) { currentScore += 20; parts.l_ear = 1; }
-            if (k[4].score > THRESHOLD) { currentScore += 20; parts.r_ear = 1; }
-
-            // Update UI Stats
-            sNose.style.color = parts.nose ? '#0f0' : '#555';
-            sNose.innerText = parts.nose ? "DETECTED" : "...";
-
-            sEyes.style.color = (parts.l_eye && parts.r_eye) ? '#0f0' : '#fff';
-            sEyes.innerText = (parts.l_eye ? "L" : "-") + " / " + (parts.r_eye ? "R" : "-");
-
-            sEars.style.color = (parts.l_ear && parts.r_ear) ? '#0f0' : '#fff';
-            sEars.innerText = (parts.l_ear ? "L" : "-") + " / " + (parts.r_ear ? "R" : "-");
-            
-            scoreDisplay.innerText = currentScore;
-
-            // Visual Feedback (Draw dots)
-            drawFacePoints(k);
-
-            // Logic: Capture Best Shot
-            // 1. Must have a decent score (>60)
-            // 2. Must be equal or better than previous best score
-            if (currentScore >= 60 && currentScore >= maxScore) {
-                // Only capture if we haven't captured this score recently or it's higher
-                if (currentScore > maxScore) {
-                    maxScore = currentScore;
-                    captureFace(k);
-                    flashScore();
-                }
+            // Capture Best Shot
+            if (finalScore > maxScore && finalScore > 60) {
+                maxScore = finalScore;
+                captureBestShot();
             }
         }
 
-        function drawFacePoints(keypoints) {
-            const faceIndices = [0, 1, 2, 3, 4];
-            ctx.fillStyle = '#0f0'; // Green dots
-            
-            faceIndices.forEach(i => {
-                if (keypoints[i].score > 0.4) {
+        function drawFace(points) {
+            ctx.fillStyle = "#0f0";
+            points.forEach(p => {
+                if(p.score > 0.3) {
                     ctx.beginPath();
-                    ctx.arc(keypoints[i].x, keypoints[i].y, 4, 0, 2 * Math.PI);
+                    ctx.arc(p.x, p.y, 5, 0, 2*Math.PI);
                     ctx.fill();
                 }
             });
         }
 
-        function flashScore() {
-            scoreDisplay.style.color = '#fff';
-            scoreDisplay.style.textShadow = '0 0 20px #fff';
-            setTimeout(() => {
-                scoreDisplay.style.color = '#0f0';
-                scoreDisplay.style.textShadow = '0 0 15px #0f0';
-            }, 150);
+        function captureBestShot() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = video.videoWidth;
+            tempCanvas.height = video.videoHeight;
+            const tCtx = tempCanvas.getContext('2d');
+            tCtx.drawImage(video, 0, 0);
+            bestImgEl.src = tempCanvas.toDataURL('image/jpeg');
         }
 
-        function captureFace(keypoints) {
-            // Calculate bounding box based on 5 keypoints
-            const facePoints = keypoints.slice(0, 5).filter(p => p.score > 0.4);
-            if (facePoints.length < 3) return; // Need at least 3 points for a good crop
-
-            const xs = facePoints.map(p => p.x);
-            const ys = facePoints.map(p => p.y);
-            
-            let minX = Math.min(...xs);
-            let maxX = Math.max(...xs);
-            let minY = Math.min(...ys);
-            let maxY = Math.max(...ys);
-
-            // Add padding (Zoom out slightly to frame the face)
-            const padX = (maxX - minX) * 0.6; 
-            const padY = (maxY - minY) * 0.8;
-
-            minX = Math.max(0, minX - padX);
-            minY = Math.max(0, minY - padY);
-            maxX = Math.min(video.videoWidth, maxX + padX);
-            maxY = Math.min(video.videoHeight, maxY + padY);
-            
-            const w = maxX - minX;
-            const h = maxY - minY;
-
-            // Crop logic
-            cropCanvas.width = w;
-            cropCanvas.height = h;
-            cropCtx.drawImage(video, minX, minY, w, h, 0, 0, w, h);
-
-            // Display in dashboard
-            bestImg.src = cropCanvas.toDataURL('image/jpeg');
-            bestImg.style.display = 'block';
-        }
-
-        // Start everything
-        setupCamera().then(loadModel);
+        // Start the process
+        initApp();
 
     </script>
 </body>
 </html>"""
-    
-    # Overwrite index.html directly
+
+    # نوشتن فایل
     with open("index.html", "w", encoding='utf-8') as f:
         f.write(html_content)
 
-    # Git commands
-    print("Pushing to GitHub...")
+    # پاک کردن فایل‌های اضافی برای جلوگیری از کش شدن نسخه قبلی
+    if os.path.exists("diagnostic.html"):
+        os.remove("diagnostic.html")
+
+    print("Git Pushing v2.0...")
     subprocess.run(["git", "add", "."], check=False)
-    subprocess.run(["git", "commit", "-m", "Final Face Scoring App"], check=False)
+    subprocess.run(["git", "commit", "-m", "Deploy v2.0 Sequential Load"], check=False)
     subprocess.run(["git", "push"], check=False)
-    print("DONE! Reload your site to see the Face Scorer.")
+    print("DONE! Wait 2 minutes, then CLEAR CACHE and try.")
 
 if __name__ == "__main__":
-    deploy_face_scoring_app()
+    deploy_sequential_app()
