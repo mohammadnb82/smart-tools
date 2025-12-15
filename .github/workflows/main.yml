@@ -1,14 +1,9 @@
 name: God Mode Python Controller
 
 on:
-  # اجرا شدن با هر بار تغییر در فایل‌ها
   push:
     branches: [ "main" ]
-  # قابلیت اجرای دستی با دکمه در پنل Actions
   workflow_dispatch:
-  # قابلیت اجرا به صورت زمان‌بندی شده (الان غیرفعال است)
-  # schedule:
-  #   - cron: "0 */6 * * *"
 
 permissions:
   contents: write      # اجازه نوشتن و حذف فایل‌ها
@@ -20,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      # ۱. دانلود کل فایل‌های پروژه روی سرور
+      # ۱. دانلود کل فایل‌های پروژه
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -31,39 +26,38 @@ jobs:
           python-version: '3.10'
 
       # ۳. نصب ابزارهای قدرت (Selenium, Chrome, Requests)
-      # تمام ابزارهایی که در کد قبلی داشتید اینجا حفظ شده‌اند
       - name: Install System & Python Dependencies
         run: |
-          # آپدیت سیستم و نصب کروم
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable unzip
-          
-          # نصب کتابخانه‌های پایتون
           pip install --upgrade pip
           pip install selenium webdriver-manager requests beautifulsoup4 lxml
 
-      # ۴. اجرای فرمانده اصلی (اسکریپت پایتون)
-      # تغییر اصلی اینجاست: شاه‌کلید (PERSONAL_TOKEN) اضافه شد
+      # ۴. اجرای فرمانده اصلی (ساخت ابزارها)
       - name: Run Python Commander (builder.py)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-          # >>> شاه‌کلید جدید برای دسترسی به مخزن دوم <<<
           PERSONAL_TOKEN: ${{ secrets.PERSONAL_TOKEN }}
-
-          # توکن‌های احتمالی دیگر (حفظ شده‌اند)
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
           INSTAGRAM_TOKEN: ${{ secrets.INSTAGRAM_TOKEN }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
         run: python builder.py
 
-      # ۵. انتشار نهایی در همین مخزن (محیط توسعه/Development)
-      # این بخش نتیجه را در همین مخزن فعلی هم نمایش می‌دهد
+      # ۵. >>> بخش جدید: ذخیره فایل‌های ساخته شده در کد اصلی <<<
+      # این همان چیزی است که باعث می‌شود پوشه tools پر شود
+      - name: Save Generated Tools to Main Branch
+        run: |
+          git config --global user.name "God Mode Bot"
+          git config --global user.email "bot@smart-tools.com"
+          git add tools/
+          git commit -m "🏗️ Auto-generated tools added to repo" || echo "No changes to commit"
+          git push origin HEAD:main
+
+      # ۶. انتشار نهایی در گیت‌هاب پیج
       - name: Deploy Result to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: .
           clean: true
           branch: gh-pages
-
