@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Check</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
+        .step { border: 1px solid #333; margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { color: #0f0; border-color: #0f0; }
+        .error { color: #f00; border-color: #f00; }
+        button { width: 100%; padding: 15px; font-size: 1.2rem; background: #333; color: white; border: none; margin-bottom: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2>SYSTEM DIAGNOSTICS</h2>
+    <button onclick="runTest()">START TEST</button>
+    <div id="logs"></div>
+    <script>
+        const log = (msg, type='neutral') => {
+            const div = document.createElement('div');
+            div.className = 'step ' + type;
+            div.innerHTML = msg;
+            document.getElementById('logs').appendChild(div);
+        }
+
+        async function runTest() {
+            document.getElementById('logs').innerHTML = '';
+            
+            // Test 1: CDN
+            log('Checking Internet/CDN...');
+            try {
+                await fetch('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js', {method:'HEAD'});
+                log('CDN Connection: OK', 'success');
+            } catch(e) {
+                log('CDN Failed (Check VPN): ' + e.message, 'error');
+                return;
+            }
+
+            // Test 2: Camera
+            log('Checking Camera Permissions...');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({video:true});
+                stream.getTracks().forEach(t=>t.stop());
+                log('Camera Access: OK', 'success');
+            } catch(e) {
+                log('Camera Blocked: ' + e.message, 'error');
+                return;
+            }
+
+            // Test 3: TFJS
+            log('Loading TensorFlow...');
+            try {
+                await import('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js');
+                await import('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.18.0/dist/tf-backend-webgl.js');
+                await import('https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0/dist/pose-detection.js');
+                log('Libraries Loaded: OK', 'success');
+            } catch(e) {
+                log('Library Load Failed: ' + e.message, 'error');
+                return;
+            }
+
+            // Test 4: Model
+            log('Downloading AI Model...');
+            try {
+                await tf.ready();
+                const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING});
+                log('Model Downloaded: OK', 'success');
+                
+                // Final Success
+                log('ALL SYSTEMS GO. <a href="camera.html" style="color:white;font-weight:bold;">[ OPEN CAMERA ]</a>', 'success');
+            } catch(e) {
+                log('Model Error (VPN?): ' + e.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
