@@ -3,38 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>کارخانه ابزار هوشمند | نسخه آزمایشی</title>
+    <title>کارخانه ابزار هوشمند | نسخه توسعه</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         body { background-color: #1a1a1a; color: #e5e5e5; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        
-        /* استایل صنعتی برای محیط توسعه */
         .tech-card {
             background: linear-gradient(145deg, #262626, #1f1f1f);
             border: 1px solid #333;
             box-shadow: 5px 5px 10px #141414, -5px -5px 10px #2e2e2e;
             transition: all 0.2s ease;
         }
-        
         .card-active:hover {
-            border-color: #f97316; /* نارنجی */
+            border-color: #f97316;
             transform: translateY(-2px);
             box-shadow: 0 0 15px rgba(249, 115, 22, 0.2);
         }
-
         .card-empty { opacity: 0.4; border-style: dashed; }
-        
-        /* نشانگر وضعیت */
-        .status-dot {
-            height: 8px; width: 8px; border-radius: 50%; display: inline-block;
-        }
+        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; }
     </style>
 </head>
 <body class="min-h-screen p-6 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
 
     <div class="max-w-7xl mx-auto">
-        <!-- هدر کارخانه -->
         <header class="flex justify-between items-center mb-10 border-b border-gray-700 pb-4">
             <div>
                 <h1 class="text-3xl font-bold text-orange-500">
@@ -43,71 +34,714 @@
                 <p class="text-gray-500 text-sm mt-1">محیط توسعه و تست ماژولار (Dev Environment)</p>
             </div>
             <div class="bg-gray-800 px-4 py-2 rounded text-xs font-mono text-orange-300">
-                STATUS: ACTIVE
+                STATUS: READY FOR BOT
             </div>
         </header>
 
-        <!-- شبکه ابزارها -->
+        <!-- شبکه ابزارها با ۵۰ دکمه استاتیک -->
         <div id="factory-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            <!-- کارت‌ها اینجا تولید می‌شوند -->
+
+            <!-- دکمه 1: دوربین تشخیص حرکت -->
+            <a href="tools/motion-cam/index.html" id="btn-1" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-active cursor-pointer">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-1" class="fas fa-video text-2xl text-orange-400"></i>
+                        <span id="status-1" class="bg-yellow-500 status-dot shadow-lg shadow-current"></span>
+                    </div>
+                    <div>
+                        <h3 id="title-1" class="font-bold text-sm text-gray-200">دوربین تشخیص حرکت</h3>
+                        <p id="path-1" class="text-[10px] text-gray-500 font-mono mt-1">/tools/motion-cam</p>
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 2: دوربین تشخیص انسان -->
+            <a href="tools/human-detection/index.html" id="btn-2" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-active cursor-pointer">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-2" class="fas fa-user-secret text-2xl text-orange-400"></i>
+                        <span id="status-2" class="bg-blue-500 status-dot shadow-lg shadow-current"></span>
+                    </div>
+                    <div>
+                        <h3 id="title-2" class="font-bold text-sm text-gray-200">دوربین تشخیص انسان</h3>
+                        <p id="path-2" class="text-[10px] text-gray-500 font-mono mt-1">/tools/human-detection</p>
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 3: ماشین حساب -->
+            <a href="tools/calculator/index.html" id="btn-3" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-active cursor-pointer">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-3" class="fas fa-calculator text-2xl text-orange-400"></i>
+                        <span id="status-3" class="bg-green-500 status-dot shadow-lg shadow-current"></span>
+                    </div>
+                    <div>
+                        <h3 id="title-3" class="font-bold text-sm text-gray-200">ماشین حساب</h3>
+                        <p id="path-3" class="text-[10px] text-gray-500 font-mono mt-1">/tools/calculator</p>
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 4: خالی -->
+            <a href="#" id="btn-4" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-4" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-4" class="font-bold text-sm text-gray-500">پروژه 4</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 5: خالی -->
+            <a href="#" id="btn-5" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-5" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-5" class="font-bold text-sm text-gray-500">پروژه 5</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 6: خالی -->
+            <a href="#" id="btn-6" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-6" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-6" class="font-bold text-sm text-gray-500">پروژه 6</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 7: خالی -->
+            <a href="#" id="btn-7" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-7" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-7" class="font-bold text-sm text-gray-500">پروژه 7</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 8: خالی -->
+            <a href="#" id="btn-8" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-8" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-8" class="font-bold text-sm text-gray-500">پروژه 8</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 9: خالی -->
+            <a href="#" id="btn-9" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-9" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-9" class="font-bold text-sm text-gray-500">پروژه 9</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 10: خالی -->
+            <a href="#" id="btn-10" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-10" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-10" class="font-bold text-sm text-gray-500">پروژه 10</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 11: خالی -->
+            <a href="#" id="btn-11" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-11" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-11" class="font-bold text-sm text-gray-500">پروژه 11</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 12: خالی -->
+            <a href="#" id="btn-12" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-12" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-12" class="font-bold text-sm text-gray-500">پروژه 12</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 13: خالی -->
+            <a href="#" id="btn-13" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-13" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-13" class="font-bold text-sm text-gray-500">پروژه 13</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 14: خالی -->
+            <a href="#" id="btn-14" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-14" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-14" class="font-bold text-sm text-gray-500">پروژه 14</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 15: خالی -->
+            <a href="#" id="btn-15" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-15" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-15" class="font-bold text-sm text-gray-500">پروژه 15</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 16: خالی -->
+            <a href="#" id="btn-16" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-16" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-16" class="font-bold text-sm text-gray-500">پروژه 16</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 17: خالی -->
+            <a href="#" id="btn-17" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-17" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-17" class="font-bold text-sm text-gray-500">پروژه 17</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 18: خالی -->
+            <a href="#" id="btn-18" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-18" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-18" class="font-bold text-sm text-gray-500">پروژه 18</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 19: خالی -->
+            <a href="#" id="btn-19" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-19" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-19" class="font-bold text-sm text-gray-500">پروژه 19</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 20: خالی -->
+            <a href="#" id="btn-20" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-20" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-20" class="font-bold text-sm text-gray-500">پروژه 20</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 21: خالی -->
+            <a href="#" id="btn-21" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-21" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-21" class="font-bold text-sm text-gray-500">پروژه 21</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 22: خالی -->
+            <a href="#" id="btn-22" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-22" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-22" class="font-bold text-sm text-gray-500">پروژه 22</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 23: خالی -->
+            <a href="#" id="btn-23" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-23" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-23" class="font-bold text-sm text-gray-500">پروژه 23</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 24: خالی -->
+            <a href="#" id="btn-24" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-24" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-24" class="font-bold text-sm text-gray-500">پروژه 24</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 25: خالی -->
+            <a href="#" id="btn-25" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-25" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-25" class="font-bold text-sm text-gray-500">پروژه 25</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 26: خالی -->
+            <a href="#" id="btn-26" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-26" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-26" class="font-bold text-sm text-gray-500">پروژه 26</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 27: خالی -->
+            <a href="#" id="btn-27" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-27" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-27" class="font-bold text-sm text-gray-500">پروژه 27</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 28: خالی -->
+            <a href="#" id="btn-28" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-28" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-28" class="font-bold text-sm text-gray-500">پروژه 28</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 29: خالی -->
+            <a href="#" id="btn-29" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-29" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-29" class="font-bold text-sm text-gray-500">پروژه 29</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 30: خالی -->
+            <a href="#" id="btn-30" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-30" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-30" class="font-bold text-sm text-gray-500">پروژه 30</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 31: خالی -->
+            <a href="#" id="btn-31" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-31" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-31" class="font-bold text-sm text-gray-500">پروژه 31</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 32: خالی -->
+            <a href="#" id="btn-32" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-32" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-32" class="font-bold text-sm text-gray-500">پروژه 32</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 33: خالی -->
+            <a href="#" id="btn-33" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-33" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-33" class="font-bold text-sm text-gray-500">پروژه 33</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 34: خالی -->
+            <a href="#" id="btn-34" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-34" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-34" class="font-bold text-sm text-gray-500">پروژه 34</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 35: خالی -->
+            <a href="#" id="btn-35" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-35" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-35" class="font-bold text-sm text-gray-500">پروژه 35</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 36: خالی -->
+            <a href="#" id="btn-36" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-36" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-36" class="font-bold text-sm text-gray-500">پروژه 36</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 37: خالی -->
+            <a href="#" id="btn-37" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-37" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-37" class="font-bold text-sm text-gray-500">پروژه 37</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 38: خالی -->
+            <a href="#" id="btn-38" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-38" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-38" class="font-bold text-sm text-gray-500">پروژه 38</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 39: خالی -->
+            <a href="#" id="btn-39" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-39" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-39" class="font-bold text-sm text-gray-500">پروژه 39</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 40: خالی -->
+            <a href="#" id="btn-40" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-40" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-40" class="font-bold text-sm text-gray-500">پروژه 40</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 41: خالی -->
+            <a href="#" id="btn-41" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-41" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-41" class="font-bold text-sm text-gray-500">پروژه 41</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 42: خالی -->
+            <a href="#" id="btn-42" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-42" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-42" class="font-bold text-sm text-gray-500">پروژه 42</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 43: خالی -->
+            <a href="#" id="btn-43" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-43" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-43" class="font-bold text-sm text-gray-500">پروژه 43</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 44: خالی -->
+            <a href="#" id="btn-44" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-44" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-44" class="font-bold text-sm text-gray-500">پروژه 44</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 45: خالی -->
+            <a href="#" id="btn-45" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-45" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-45" class="font-bold text-sm text-gray-500">پروژه 45</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 46: خالی -->
+            <a href="#" id="btn-46" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-46" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-46" class="font-bold text-sm text-gray-500">پروژه 46</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 47: خالی -->
+            <a href="#" id="btn-47" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-47" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-47" class="font-bold text-sm text-gray-500">پروژه 47</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 48: خالی -->
+            <a href="#" id="btn-48" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-48" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-48" class="font-bold text-sm text-gray-500">پروژه 48</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 49: خالی -->
+            <a href="#" id="btn-49" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-49" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-49" class="font-bold text-sm text-gray-500">پروژه 49</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
+            <!-- دکمه 50: خالی -->
+            <a href="#" id="btn-50" class="block h-full group text-decoration-none">
+                <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between card-empty">
+                    <div class="flex justify-between items-start">
+                        <i id="icon-50" class="fas fa-cube text-2xl text-gray-600"></i>
+                        <!-- وضعیت خاموش است -->
+                    </div>
+                    <div>
+                        <h3 id="title-50" class="font-bold text-sm text-gray-500">پروژه 50</h3>
+                        <!-- مسیر ندارد -->
+                    </div>
+                </div>
+            </a>
+            
         </div>
     </div>
-
-    <script>
-        // ==========================================
-        // 🏗️ لیست پروژه‌های در دست ساخت
-        // ==========================================
-        // نکته مهم: هر ابزار باید در پوشه tools/name قرار داشته باشد
-        const projects = [
-            { 
-                id: 1, 
-                name: "motion-cam", // نام پوشه در دایرکتوری tools
-                title: "دوربین تشخیص حرکت", 
-                icon: "fa-video", 
-                status: "testing" // وضعیت: testing, stable, dev
-            },
-            // ابزارهای بعدی اینجا اضافه می‌شوند
-        ];
-
-        // پر کردن بقیه تا ۵۰
-        for (let i = projects.length + 1; i <= 50; i++) {
-            projects.push({ id: i, name: null, title: `پروژه ${i}`, icon: "fa-cube", status: "empty" });
-        }
-
-        const grid = document.getElementById('factory-grid');
-
-        projects.forEach(proj => {
-            const isEmpty = proj.status === 'empty';
-            
-            // تعیین رنگ وضعیت
-            let statusColor = 'bg-gray-600';
-            if (proj.status === 'testing') statusColor = 'bg-yellow-500'; // زرد برای تست
-            if (proj.status === 'stable') statusColor = 'bg-green-500';   // سبز برای آماده
-            if (proj.status === 'dev') statusColor = 'bg-blue-500';       // آبی برای در حال ساخت
-
-            // ساخت لینک: tools/folder_name/index.html
-            const link = isEmpty ? '#' : `tools/${proj.name}/index.html`;
-            
-            const html = `
-                <a href="${link}" class="block h-full group">
-                    <div class="tech-card h-32 rounded-lg p-4 relative flex flex-col justify-between ${isEmpty ? 'card-empty' : 'card-active cursor-pointer'}">
-                        
-                        <div class="flex justify-between items-start">
-                            <i class="fas ${proj.icon} text-2xl ${isEmpty ? 'text-gray-600' : 'text-orange-400'}"></i>
-                            ${!isEmpty ? `<span class="${statusColor} status-dot shadow-lg shadow-current"></span>` : ''}
-                        </div>
-
-                        <div>
-                            <h3 class="font-bold text-sm ${isEmpty ? 'text-gray-500' : 'text-gray-200'}">
-                                ${proj.title}
-                            </h3>
-                            ${!isEmpty ? `<p class="text-[10px] text-gray-500 font-mono mt-1">/tools/${proj.name}</p>` : ''}
-                        </div>
-                    </div>
-                </a>
-            `;
-            grid.innerHTML += html;
-        });
-    </script>
 </body>
 </html>
