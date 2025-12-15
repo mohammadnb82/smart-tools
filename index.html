@@ -1,79 +1,124 @@
-<!DOCTYPE html> 
 
-<html lang="en">
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Check</title>
+    <title>Smart Tools V5 - Auto Built</title>
     <style>
-        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; }
-        .step { border: 1px solid #333; margin: 10px 0; padding: 10px; border-radius: 5px; }
-        .success { color: #0f0; border-color: #0f0; }
-        .error { color: #f00; border-color: #f00; }
-        button { width: 100%; padding: 15px; font-size: 1.2rem; background: #333; color: white; border: none; margin-bottom: 20px; cursor: pointer; }
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f1f5f9;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .tool-card {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: 1px solid #334155;
+            text-decoration: none;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 120px;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            border-color: var(--accent);
+        }
+
+        .icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            margin-top: 30px;
+            font-size: 0.9em;
+            color: #94a3b8;
+            text-align: center;
+        }
+        
+        .footer-note {
+            margin-top: 10px;
+            font-size: 0.8em;
+            color: #64748b;
+        }
     </style>
 </head>
 <body>
-    <h2>SYSTEM DIAGNOSTICS</h2>
-    <button onclick="runTest()">START TEST</button>
-    <div id="logs"></div>
-    <script>
-        const log = (msg, type='neutral') => {
-            const div = document.createElement('div');
-            div.className = 'step ' + type;
-            div.innerHTML = msg;
-            document.getElementById('logs').appendChild(div);
-        }
 
-        async function runTest() {
-            document.getElementById('logs').innerHTML = '';
-            
-            // Test 1: CDN
-            log('Checking Internet/CDN...');
-            try {
-                await fetch('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js', {method:'HEAD'});
-                log('CDN Connection: OK', 'success');
-            } catch(e) {
-                log('CDN Failed (Check VPN): ' + e.message, 'error');
-                return;
-            }
+    <h1>🛠️ جعبه ابزار هوشمند</h1>
 
-            // Test 2: Camera
-            log('Checking Camera Permissions...');
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({video:true});
-                stream.getTracks().forEach(t=>t.stop());
-                log('Camera Access: OK', 'success');
-            } catch(e) {
-                log('Camera Blocked: ' + e.message, 'error');
-                return;
-            }
+    <div class="container">
+        <!-- ابزار ۱: ضبط صفحه -->
+        <a href="#" class="tool-card" onclick="alert('قابلیت ضبط صفحه به زودی فعال می‌شود')">
+            <div class="icon">🎥</div>
+            <div>ضبط صفحه</div>
+        </a>
 
-            // Test 3: TFJS
-            log('Loading TensorFlow...');
-            try {
-                await import('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js');
-                await import('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.18.0/dist/tf-backend-webgl.js');
-                await import('https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0/dist/pose-detection.js');
-                log('Libraries Loaded: OK', 'success');
-            } catch(e) {
-                log('Library Load Failed: ' + e.message, 'error');
-                return;
-            }
+        <!-- ابزار ۲: دوربین -->
+        <a href="camera.html" class="tool-card">
+            <div class="icon">📷</div>
+            <div>دوربین هوشمند</div>
+        </a>
 
-            // Test 4: Model
-            log('Downloading AI Model...');
-            try {
-                await tf.ready();
-                const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING});
-                log('Model Downloaded: OK', 'success');
-                
-                // Final Success
-                log('ALL SYSTEMS GO. <a href="camera.html" style="color:white;font-weight:bold;">[ OPEN CAMERA ]</a>', 'success');
-            } catch(e) {
-                log('Model Error (VPN?): ' + e.message, 'error');
-            }
-        }
-    </script>
+        <!-- ابزار ۳: ضبط صدا -->
+        <a href="#" class="tool-card">
+            <div class="icon">🎙️</div>
+            <div>ضبط صدا</div>
+        </a>
+
+        <!-- ابزار ۴: تبدیل فرمت -->
+        <a href="#" class="tool-card">
+            <div class="icon">🔄</div>
+            <div>تبدیل فرمت</div>
+        </a>
+    </div>
+
+    <div class="status">
+        وضعیت سیستم: <span style="color: #4ade80">آنلاین</span> | نسخه ۵.۰
+    </div>
+    <div class="footer-note">
+        ساخته شده توسط Python Builder 🐍
+    </div>
+
 </body>
 </html>

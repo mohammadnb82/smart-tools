@@ -1,46 +1,38 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="fa">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <style>body{margin:0;background:black;overflow:hidden} video,canvas{position:absolute;width:100%;height:100%}</style>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@3.18.0/dist/tf-backend-webgl.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.0.0/dist/pose-detection.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دوربین هوشمند</title>
+    <style>
+        body { background-color: #0f172a; color: white; text-align: center; font-family: sans-serif; }
+        video { width: 90%; max-width: 600px; border-radius: 10px; border: 2px solid #3b82f6; margin-top: 20px; }
+        button { background-color: #3b82f6; color: white; border: none; padding: 10px 20px; margin-top: 20px; border-radius: 5px; cursor: pointer; }
+        a { color: #94a3b8; display: block; margin-top: 20px; text-decoration: none; }
+    </style>
 </head>
 <body>
-    <video id="v" playsinline muted autoplay></video>
-    <canvas id="c"></canvas>
+    <h2>📷 دوربین فعال است</h2>
+    <video id="video" autoplay playsinline></video>
+    <br>
+    <button id="snap">گرفتن عکس</button>
+    <canvas id="canvas" style="display:none"></canvas>
+    
+    <a href="index.html">بازگشت به خانه</a>
+
     <script>
-        async function run() {
-            const v = document.getElementById('v');
-            const c = document.getElementById('c');
-            const ctx = c.getContext('2d');
-            
-            const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-            v.srcObject = stream;
-            await new Promise(r => v.onloadedmetadata = r);
-            v.play();
-            c.width = v.videoWidth; c.height = v.videoHeight;
-
-            await tf.ready();
-            const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING});
-
-            async function frame() {
-                const poses = await detector.estimatePoses(v);
-                ctx.clearRect(0,0,c.width,c.height);
-                poses.forEach(p => {
-                    p.keypoints.forEach(k => {
-                        if(k.score > 0.3) {
-                            ctx.beginPath(); ctx.arc(k.x, k.y, 8, 0, 2*Math.PI);
-                            ctx.fillStyle = '#00ff00'; ctx.fill();
-                        }
-                    });
+        const video = document.getElementById('video');
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(function (stream) {
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(function (error) {
+                    alert("دسترسی به دوربین داده نشد!");
                 });
-                requestAnimationFrame(frame);
-            }
-            frame();
         }
-        run();
     </script>
 </body>
 </html>
