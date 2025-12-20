@@ -1,4 +1,4 @@
-# --- AUTO GENERATED INSTALLER ---
+# --- AUTO  GENERATED INSTALLER ---
 import os
 import base64
 import sys
